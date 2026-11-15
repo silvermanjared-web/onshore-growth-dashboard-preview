@@ -74,33 +74,43 @@ const channelPlan = [
   { name:"Events", type:"event", spend:4600, response:[12,5], sal:[6,2] },
   { name:"Direct / other", type:"direct", spend:0, response:[7,2], sal:[3,1] }
 ];
-const weeks = ["Jan 4", "Jan 11", "Jan 18", "Jan 25"];
+const launchWeeks = [
+  {label:"Jan 4", paidPace:.12, otherPace:.35, qualification:.82, paidBudget:1600},
+  {label:"Jan 11",paidPace:.23, otherPace:.52, qualification:.72, paidBudget:3100},
+  {label:"Jan 18",paidPace:.46, otherPace:.70, qualification:.60, paidBudget:5900},
+  {label:"Jan 25",paidPace:.76, otherPace:.95, qualification:.50, paidBudget:9600}
+];
+const weeks = launchWeeks.map(week=>week.label);
+const paidOfferingShare = [.7,.3];
 const productNames = {all:"All offerings",rd:"§41 R&D Tax Credit","179d":"§179D Tax Deduction"};
 const snapshot = {short:"Jan 31", full:"Jan 31, 2027"};
 const periods = {
-  all:{firstWeek:0,lastWeek:3,firstDate:"2027-01-04",lastDate:"2027-01-31",end:"Jan 31",receiptControl:{rd:153400,"179d":0}},
-  early:{firstWeek:0,lastWeek:1,firstDate:"2027-01-04",lastDate:"2027-01-17",end:"Jan 17",receiptControl:{rd:59000,"179d":0}},
-  late:{firstWeek:2,lastWeek:3,firstDate:"2027-01-18",lastDate:"2027-01-31",end:"Jan 31",receiptControl:{rd:94400,"179d":0}}
+  all:{firstWeek:0,lastWeek:3,firstDate:"2027-01-04",lastDate:"2027-01-31",end:"Jan 31",receiptControl:{rd:93000,"179d":0}},
+  early:{firstWeek:0,lastWeek:1,firstDate:"2027-01-04",lastDate:"2027-01-17",end:"Jan 17",receiptControl:{rd:42000,"179d":0}},
+  late:{firstWeek:2,lastWeek:3,firstDate:"2027-01-18",lastDate:"2027-01-31",end:"Jan 31",receiptControl:{rd:51000,"179d":0}}
 };
 const receiptRows = [
-  {date:"2027-01-10",product:"rd",amount:35400,origination:"2026-12-15"},
-  {date:"2027-01-17",product:"rd",amount:23600,origination:null},
-  {date:"2027-01-22",product:"rd",amount:59000,origination:"2027-01-04"},
-  {date:"2027-01-29",product:"rd",amount:35400,origination:"2027-01-11"}
+  {date:"2027-01-10",product:"rd",amount:24000,origination:"2026-12-15"},
+  {date:"2027-01-17",product:"rd",amount:18000,origination:null},
+  {date:"2027-01-22",product:"rd",amount:26000,origination:"2026-12-21"},
+  {date:"2027-01-29",product:"rd",amount:25000,origination:"2026-12-28"}
 ];
 const baseRows = weeks.flatMap((week, wi) => channelPlan.flatMap((source, si) => ["rd","179d"].map((product, pi) => {
-  const inquiries = source.response[pi] + ((wi+si)%3)-1;
-  const sal = source.sal[pi] + Number((wi+si+pi)%3 === 0);
-  const mql = sal + Math.ceil((inquiries-sal)*.53);
-  const sql = Math.floor(sal*(wi < 2 ? .79 : .61));
+  const launch = launchWeeks[wi];
+  const pace = source.type==="paid" ? launch.paidPace : launch.otherPace;
+  const inquiries = Math.max(1,Math.round((source.response[pi]+(wi+si)%3-1)*pace));
+  const sal = Math.min(inquiries,Math.round((source.sal[pi]+Number((wi+si+pi)%3===0))*pace));
+  const mql = sal+Math.ceil((inquiries-sal)*.53);
+  const sql = Math.floor(sal*launch.qualification);
   const held = Math.round(sql*(wi<2?.87:.76));
   const opp = Math.round(held*(wi<2?.65:.62));
-  const won = wi<2 ? Math.floor(opp/2) : 0;
+  const won = Number(wi===1 && source.type==="partner" && product==="rd" && opp>0);
   const openOpp = opp-won;
-  return {week, wi, product, channel:source.name, type:source.type, inquiries, mql, sal, sql, held, opp, openOpp, won, pipeline:openOpp*(pi===0 ? 21000+2500*si : 29500+1500*si), cost:Math.round(source.spend*(pi===0?.7:.3)*(1+(wi-1)*.07))};
+  const cost = Math.round(source.spend*paidOfferingShare[pi]*pace);
+  return {week, wi, product, channel:source.name, type:source.type, inquiries, mql, sal, sql, held, opp, openOpp, won, pipeline:openOpp*(pi===0 ? 21000+2500*si : 29500+1500*si), cost};
 })));
 const viewMeta = {
-  executive:{name:"Executive", title:"Growth at a glance", summary:"Pipeline, spend and the decisions to make next.",filter:"Pipeline and SAL by inquiry cohort. Cash by receipt date."},
+  executive:{name:"Executive", title:"Growth at a glance", summary:"January launch traction, open pipeline and cash receipts.",filter:"Pipeline and SAL by inquiry cohort. Cash by receipt date."},
   sales:{name:"Sales",title:"Lead quality and follow-up",summary:"Acceptance, held meetings, rejection reasons and time in stage.",filter:"Period and offering filter the Sales metrics. The process checklist stays fixed."},
   engineering:{name:"Engineering",title:"Measurement health",summary:"Source freshness, reconciliation, consent and our end-to-end lead test.",filter:"Operational checks use a single environment snapshot."},
   media:{name:"Media",title:"Media performance",summary:"Paid pacing, acquisition cost and downstream quality by channel.",filter:"Applies to paid delivery and inquiry cohorts."},
@@ -172,11 +182,16 @@ function executive(rows) {
     kpi("Open sourced pipeline",shortUsd(open),usd(open)+" across "+n(total(rows,"openOpp"))+" open opps as of "+snapshot.short),
     kpi("Sales-accepted leads",n(total(rows,"sal")),"All channels · "+n(paidSal)+" paid + "+n(total(rows,"sal")-paidSal)+" other"),
     kpi("Paid cost per SAL",cp(paidSpend,paidSal),usd(paidSpend)+" paid spend ÷ "+n(paidSal)+" paid-source SAL"),
-    kpi("Cash collected",shortUsd(cash),usd(cash)+" by Finance receipt date")
+    kpi("Cash collected",shortUsd(cash),usd(cash)+" by receipt date · pre-launch or unlinked")
   ])+stacked(
     box("Open pipeline by inquiry week","Open opportunity value as of "+snapshot.full+".",bars(weekly(rows,"pipeline"),shortUsd)),
     box("Pipeline by primary source","One primary source per opportunity.",table(["Source","Open opportunities","Value"],channels(rows,(name,data)=>[name,n(total(data,"openOpp")),shortUsd(total(data,"pipeline"))]),[1,2])),
-    box("Decision for the next review","Example agenda for Dominic, Alexis, Loan and Finance.",defs([["Compare","Review paid-search and partner quality once cohorts have comparable maturity."],["Confirm","Reconcile Finance receipts by payment date. Some payments may come from earlier inquiry cohorts."],["Decide","Agree with Sales and Finance on the spend or tracking change for the next cycle."]]),true)
+    box("Launch traction by inquiry week","The synthetic launch starts with limited delivery. Read accepted leads and held meetings alongside cohort age.",table(["Inquiry week","All-source SAL","Paid-source SAL","Held meetings"],weeks.flatMap((week,wi)=>{
+      const cohort = rows.filter(row=>row.wi===wi);
+      if (!cohort.length) return [];
+      return [[week,n(total(cohort,"sal")),n(total(cohort.filter(row=>row.type==="paid"),"sal")),n(total(cohort,"held"))]];
+    }),[1,2,3]),true),
+    box("Decision for the next review","Example agenda for Dominic, Alexis, Loan and Finance.",defs([["Compare","Review paid-search and partner quality once cohorts have comparable maturity."],["Confirm","Tie cash to Finance receipt dates and review which receipts have an inquiry link."],["Decide","Review pacing and tracking evidence with Sales and Finance before the next spend increase."]]),true)
   );
 }
 const rejectionReasons = [
@@ -271,10 +286,12 @@ function media(rows) {
   const paid = rows.filter(r=>r.type==="paid");
   const spend = total(paid,"cost");
   const paidSal = total(paid,"sal");
-  const plan = [...new Set(rows.map(r=>r.wi))].length * ($("product").value==="rd"?8000:$("product").value==="179d"?3500:11500);
+  const weeksInScope = [...new Set(rows.map(row=>row.wi))];
+  const budgetShare = offeringInScope("rd") && offeringInScope("179d") ? 1 : offeringInScope("rd") ? paidOfferingShare[0] : paidOfferingShare[1];
+  const plan = weeksInScope.reduce((budget,wi)=>budget+launchWeeks[wi].paidBudget*budgetShare,0);
   return kpis([
     kpi("Media spend",shortUsd(spend),usd(spend)+" · paid channels only"),
-    kpi("Plan used",ratio(spend,plan),"Compared with illustrative period plan"),
+    kpi("Plan used",ratio(spend,plan),usd(plan)+" phased sample budget in scope"),
     kpi("Paid cost per SAL",cp(spend,paidSal),usd(spend)+" paid spend ÷ "+n(paidSal)+" paid-source SAL"),
     kpi("Cost per held",cp(spend,total(paid,"held")),"Paid cost / held meetings")
   ])+stacked(
@@ -379,7 +396,7 @@ function exampleBrief(rows) {
   const paidSal = total(paid,"sal");
   switch (currentView) {
     case "executive":
-      return [usd(total(rows,"pipeline"))+" in open sourced pipeline as of "+snapshot.short+", "+n(sal)+" all-channel sales-accepted leads and "+usd(total(currentReceipts(),"amount"))+" in cash received in the selected period.",ratio(paidSal,sal)+" of accepted leads have a paid primary source. Paid cost per SAL uses "+usd(total(paid,"cost"))+" divided by "+n(paidSal)+" paid-source accepted leads.","Open pipeline reflects inquiry cohorts at the stage snapshot. Cash reflects Finance receipt dates, which can come from different acquisition cohorts.","Alexis and Finance review spend and payment receipts with Loan at the next weekly decision meeting."];
+      return [usd(total(rows,"pipeline"))+" in open sourced pipeline as of "+snapshot.short+", "+n(sal)+" all-channel sales-accepted leads and "+usd(total(currentReceipts(),"amount"))+" in cash received in the selected period.",ratio(paidSal,sal)+" of accepted leads have a paid primary source. Paid cost per SAL uses "+usd(total(paid,"cost"))+" divided by "+n(paidSal)+" paid-source accepted leads.","Open pipeline reflects inquiry cohorts at the stage snapshot. Cash follows Finance receipt dates. The sample receipts are linked to pre-launch inquiries or lack an inquiry link. Compare launch cohorts after they mature.","Alexis and Finance review spend and payment receipts with Loan at the next weekly decision meeting."];
     case "sales": {
       const {reasonCounts,rejected,pending} = salesDisposition(rows);
       const topReason = reasonCounts.indexOf(Math.max(...reasonCounts));
