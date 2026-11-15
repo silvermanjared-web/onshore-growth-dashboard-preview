@@ -26,6 +26,18 @@
   dialog{width:min(670px,calc(100% - 30px));padding:22px;border:1px solid var(--ink);background:var(--paper);color:var(--ink)}dialog::backdrop{background:#17171699}.dialog-top{display:flex;justify-content:space-between;align-items:start;gap:12px}dialog h2{font:400 32px/1 var(--serif);margin:0 0 6px;letter-spacing:-.035em}dialog p{color:var(--muted);font-size:13px}.prompt{display:block;width:100%;min-height:75px;padding:9px;background:var(--white);border:1px solid var(--line);font-size:13px;margin-bottom:8px;resize:vertical}
   @media(max-width:800px){.wrap{width:calc(100% - 38px)}.hero{align-items:start;flex-direction:column;gap:12px}.grid{grid-template-columns:1fr}.box.full{grid-column:auto}.asset-grid{grid-template-columns:1fr 1fr}}
   @media(max-width:500px){.wrap{width:calc(100% - 28px)}.masthead .wrap{min-height:54px}.wordmark span{display:none}.sample{font-size:9px}.hero{padding-top:20px}.hero p{font-size:14px}.filters{align-items:start;flex-direction:column}.filter-description{text-align:left}.filters select{max-width:100%}.filters #product{min-width:min(228px,100%)}.kpis{grid-template-columns:1fr 1fr}.kpi:nth-child(3){border-left:0;padding-left:0}.kpi:nth-child(n+3){border-top:1px solid var(--line)}.kpi .number{font-size:38px}.asset-grid{grid-template-columns:1fr}.box{padding:12px}.table td{white-space:normal}.table td,.table th{padding-right:6px}.bar-row{grid-template-columns:minmax(100px,1.2fr) minmax(45px,1.7fr) minmax(28px,.55fr)}}
+  .growth-flow{margin:14px 0 0;padding:0;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:19px;list-style:none}
+  .growth-flow li{position:relative;background:var(--soft);padding:12px;min-width:0}
+  .growth-flow li:first-child{border-top:3px solid var(--accent)}
+  .growth-flow li:not(:first-child){border-top:3px solid var(--ink)}
+  .growth-flow strong,.growth-flow small{display:block}.growth-flow strong{font-size:14px}.growth-flow small{margin-top:4px;font-size:12px;color:var(--muted)}
+  .flow-arrow{position:absolute;right:-17px;top:11px;color:var(--accent);font-weight:700}
+  .flow-return,.study-footnote{margin:11px 0 0;font-size:12px;color:var(--muted)}
+  .study-note{margin:8px 0 13px;padding:8px 10px;border-left:3px solid var(--accent);background:var(--soft);font-size:13px}
+  .efficiency{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:12px 0 0;padding:0;font-size:12px}
+  .efficiency div{border-top:1px solid var(--line);padding:8px 0 0}.efficiency dt{font-weight:700}.efficiency dd{margin:3px 0;color:var(--muted)}
+  .brand-delivery{margin-top:13px;border-top:1px solid var(--line);padding-top:10px;font-size:12px}.brand-delivery summary{font-weight:700;cursor:pointer}
+  @media(max-width:660px){.growth-flow{grid-template-columns:1fr;gap:14px}.flow-arrow{right:12px;top:auto;bottom:-16px;transform:rotate(90deg)}.efficiency{grid-template-columns:1fr}}
 </style>
 </head>
 <body>
@@ -47,7 +59,7 @@
     <div id="dashboard"></div>
     <details class="methods"><summary>Metric definitions and attribution</summary>
       <p>Inquiries and stages are synthetic, deduplicated inquiry-cohort counts. SAL means Sales accepted the inquiry for follow-up. SQL means Sales confirmed qualification. Held means an AE meeting occurred. Open sourced pipeline is gross open opportunity value at the stage snapshot. Each opportunity has one primary source. Cash collected is a separate Finance measure by receipt date and may include receipts from earlier or unknown acquisition cohorts.</p>
-      <p>Paid cost per SAL divides paid demand spend by accepted leads with a paid demand source. All-channel SAL includes paid and nonpaid sources. Brand awareness has its own company-wide plan, spend and impressions. Exposure measures delivery, and a separate study would measure lift. Partner and event costs use fully loaded allocated cost in the demo. Sourced and influenced opportunity sets can overlap. Assists stay separate from sourced totals. Incrementality requires a separate design.</p>
+      <p>Paid cost per SAL divides paid demand spend by accepted leads with a paid demand source. All-channel SAL includes paid and nonpaid sources. Brand delivery uses company-wide plan, spend and impressions. The Media view includes a separate fictional matched-market comparison. Branded-search activity and CRM outcomes are measured at market level, each with its own source and denominator. Partner and event costs use fully loaded allocated cost in the demo. Sourced and influenced opportunity sets can overlap. Assists stay separate from sourced totals. Incrementality requires a separate design.</p>
       <p>§179D inquiries do not establish eligibility. Production qualification needs an approved construction-start and eligibility disposition from Sales and Tax. The period selects inquiry cohorts or receipt dates, according to the metric. Stage outcomes use a common January 31, 2027 snapshot, so later cohorts have had less time to mature. Sample checks compare stage balances and receipts with the fictional control totals. Empty denominators display as a dash.</p>
       <p>Sales dispositions illustrate how marketing-qualified inquiries split into accepted, rejected and pending decisions. Rejection percentages use only rejected MQLs as the denominator. Age is calendar days in the current stage through the report cutoff. Stage assignments and entry dates are simulated for the same open opportunities counted in the selected cohort.</p>
     </details>
@@ -119,7 +131,7 @@ const viewMeta = {
   executive:{name:"Executive", title:"Growth at a glance", summary:"January launch traction, open pipeline and cash receipts.",filter:"Pipeline and SAL by inquiry cohort. Cash by receipt date."},
   sales:{name:"Sales",title:"Lead quality and follow-up",summary:"Acceptance, held meetings, rejection reasons and time in stage.",filter:"Period and offering filter the Sales metrics. The process checklist stays fixed."},
   engineering:{name:"Engineering",title:"Measurement health",summary:"Source freshness, reconciliation, consent and our end-to-end lead test.",filter:"Operational checks use a single environment snapshot."},
-  media:{name:"Media",title:"Media performance",summary:"Demand acquisition pacing and brand awareness delivery.",filter:"Demand follows period and offering. Brand awareness follows period."},
+  media:{name:"Media",title:"Media performance",summary:"Follow brand and demand from early interest to accepted leads and acquisition efficiency.",filter:"Demand follows period and offering. Brand delivery follows period. The worked comparison is fixed."},
   seo:{name:"SEO",title:"Organic search",summary:"Visibility and qualified demand, with an agency-facing landing page view.",filter:"Applies to organic cohorts. Public search queries remain aggregate."},
   creative:{name:"Creative",title:"Creative review",summary:"Review asset thumbnails, copy variants and the decision behind the next test.",filter:"Offering filters assets. Review status uses a single snapshot."},
   partners:{name:"Partners & Events",title:"Partners and events",summary:"Show the contribution of partner and event programs with a clear cost basis.",filter:"Applies to results and allocated costs for partner and event cohorts."}
@@ -174,7 +186,7 @@ function bars(items, formatter=n) {
   return '<div class="chart">'+items.map(([name,value])=>'<div class="bar-row"><span class="bar-label">'+clean(name)+'</span><div class="track" aria-hidden="true"><span style="width:'+value/max*100+'%"></span></div><span class="bar-value">'+clean(formatter(value))+'</span></div>').join("")+'</div>';
 }
 const stacked = (...content) => '<div class="grid">'+content.join("")+'</div>';
-const defs = (items) => '<dl class="ledger">'+items.map(([label,value])=>'<div><dt>'+clean(label)+'</dt><dd>'+clean(value)+'</dd></div>').join("")+'</dl>';
+const defs = (items,className="ledger") => '<dl class="'+className+'">'+items.map(([label,value])=>'<div><dt>'+clean(label)+'</dt><dd>'+clean(value)+'</dd></div>').join("")+'</dl>';
 const channels = (rows, fn) => channelPlan.filter(p=>rows.some(r=>r.channel===p.name)).map(p=>fn(p.name,rows.filter(r=>r.channel===p.name)));
 const weekly = (rows, key) => weeks.filter((week,wi)=>rows.some(r=>r.wi===wi)).map(week=>[week,total(rows.filter(r=>r.week===week),key)]);
 const stages = [["Inquiry","inquiries"],["Marketing-qualified","mql"],["Sales-accepted","sal"],["Sales-qualified","sql"],["Meeting held","held"],["Opportunity","opp"]];
@@ -293,13 +305,72 @@ function brandInPeriod() {
   return brandDelivery.slice(firstWeek,lastWeek+1).map((row,index)=>({week:weeks[firstWeek+index],...row}));
 }
 
-function brandAwareness() {
+const exampleBrandStudy = {
+  demandSpend:4400,
+  extraBrandSpend:1200,
+  signals:[
+    {label:"Branded-search clicks", test:[400,480], holdout:[400,420]},
+    {label:"Validated inquiries",   test:[40,50],   holdout:[40,42]},
+    {label:"Sales-accepted leads",  test:[20,26],   holdout:[20,22]}
+  ],
+  paidSourceAccepted:{test:15,holdout:11}
+};
+
+const oneDecimal = new Intl.NumberFormat("en-US",{maximumFractionDigits:1});
+const changePercent = (value,reference) => oneDecimal.format((value/reference-1)*100)+"%";
+
+function brandStudyReadout() {
+  const study = exampleBrandStudy;
+  const funnel = study.signals.map(({label,test,holdout})=>{
+    const estimatedWithoutBrand = test[0]*holdout[1]/holdout[0];
+    return [label,test.map(n).join(" → "),holdout.map(n).join(" → "),n(estimatedWithoutBrand),
+      "+"+n(test[1]-estimatedWithoutBrand)+" (+"+changePercent(test[1],estimatedWithoutBrand)+")"];
+  });
+  const accepted = study.signals.at(-1);
+  const expectedAccepted = accepted.test[0]*accepted.holdout[1]/accepted.holdout[0];
+  const additionalAccepted = accepted.test[1]-expectedAccepted;
+  const demandWith = study.demandSpend/study.paidSourceAccepted.test;
+  const demandWithout = study.demandSpend/study.paidSourceAccepted.holdout;
+  const combinedWith = (study.demandSpend+study.extraBrandSpend)/accepted.test[1];
+  const combinedWithout = study.demandSpend/accepted.holdout[1];
+  return {funnel,additionalAccepted,acceptedWithBrand:accepted.test[1],expectedAccepted,demandWith,demandWithout,combinedWith,combinedWithout,
+    brandCostPerAdded:study.extraBrandSpend/additionalAccepted};
+}
+
+function growthJourney() {
+  const stages = [
+    ["Build familiarity","Brand placements build recognition. Check reach and frequency, and use recall surveys where feasible."],
+    ["Capture intent","Follow branded search activity and deduplicated inquiries across demand channels."],
+    ["Validate with Sales","Read acceptance and held meetings, then track opportunities as cohorts mature."],
+    ["Improve the next cycle","Compare incremental accepted leads and the cost to generate them before changing the mix."]
+  ];
+  const flow = '<ol class="growth-flow" aria-label="Brand and demand measurement sequence">'+stages.map(([title,detail],index)=>
+    '<li><strong>'+clean(title)+'</strong><small>'+clean(detail)+'</small>'+
+    (index<stages.length-1?'<span class="flow-arrow" aria-hidden="true">→</span>':'')+'</li>'
+  ).join("")+'</ol>';
+  return box("How brand and demand work together","Brand helps prospects recognize Onshore. Demand channels give interested buyers a way to act, and Sales tells us which inquiries progress.",
+    flow+'<p class="flow-return"><strong>Back to the next brief.</strong> Use the messages that earn qualified interest and the objections Sales records to refine both brand creative and acquisition campaigns.</p>',true);
+}
+
+function brandImpact() {
+  const readout = brandStudyReadout();
+  const studyRows = table(["Signal","Brand markets · before → after","Holdout · before → after","Expected without brand","Example difference"],readout.funnel,[1,2,3,4]);
+  const efficiency = defs([
+    ["Demand cost per paid-source accepted lead",usd(readout.demandWith)+" with brand vs "+usd(readout.demandWithout)+" in holdout. Demand spend was the same in both."],
+    ["Combined media cost per accepted lead",usd(readout.combinedWith)+" with brand vs "+usd(readout.combinedWithout)+" in holdout. Uses all-source accepted leads and includes the added brand spend."]
+  ],"efficiency");
   const delivery = brandInPeriod();
   const figures = row=>[usd(row.plan),usd(row.spend),n(row.impressions)];
-  const periodTotals = {plan:total(delivery,"plan"),spend:total(delivery,"spend"),impressions:total(delivery,"impressions")};
-  const rows = delivery.map(row=>[row.week,...figures(row)]);
-  return box("Brand awareness","Company-wide sample delivery for the selected period. Impressions count exposures, including repeat views.",
-    table(["Week","Plan","Spend","Impressions"],[...rows,["Period total",...figures(periodTotals)]],[1,2,3]),true);
+  const totals = {plan:total(delivery,"plan"),spend:total(delivery,"spend"),impressions:total(delivery,"impressions")};
+  const deliveryRows = delivery.map(row=>[row.week,...figures(row)]);
+  const deliveryPanel = '<details class="brand-delivery"><summary>January brand delivery details</summary><p class="study-footnote">Company-wide sample delivery for the selected period. Impressions count exposures, including repeat views.</p>'+
+    table(["Week","Plan","Spend","Impressions"],[...deliveryRows,["Period total",...figures(totals)]],[1,2,3])+'</details>';
+  return box("Brand impact on demand","Worked example using fixed fictional markets and equal-length periods. January filters apply to delivery details.",
+    '<p class="study-note"><strong>Primary outcome · '+n(readout.additionalAccepted)+' additional Sales-accepted leads in the worked example.</strong> The brand markets reached '+n(readout.acceptedWithBrand)+' accepted leads against '+n(readout.expectedAccepted)+' expected if they had followed the holdout trend.</p>'+
+    studyRows+efficiency+
+    '<p class="study-footnote">Added brand spend per additional accepted lead is <strong>'+usd(readout.brandCostPerAdded)+'</strong> in this example. Before scaling, check opportunity progression and contribution as the cohorts mature.</p>'+
+    '<p class="study-footnote">For a live read, match markets on prior trends, randomly assign brand exposure within pairs where feasible, keep demand activity comparable and check spillover. Read Sales outcomes at the same cohort age and report uncertainty. Branded search is an aggregate signal. <a href="https://research.google/pubs/measuring-ad-effectiveness-using-geo-experiments/">Geo experiment method</a></p>'+
+    deliveryPanel,true);
 }
 
 function media(rows) {
@@ -315,9 +386,10 @@ function media(rows) {
     kpi("Paid cost per SAL",cp(spend,paidSal),usd(spend)+" demand spend ÷ "+n(paidSal)+" paid-source SAL"),
     kpi("Cost per held",cp(spend,total(paid,"held")),"Paid cost / held meetings")
   ])+stacked(
+    growthJourney(),
     box("Paid channel scorecard","Each cost per SAL uses spend and paid-source SAL from the same channel.",table(["Channel","Spend","Inquiries","Paid SAL","Cost/SAL","Held"],channels(paid,(name,data)=>[name,usd(total(data,"cost")),n(total(data,"inquiries")),n(total(data,"sal")),cp(total(data,"cost"),total(data,"sal")),n(total(data,"held"))]),[1,2,3,4,5])),
     box("Demand spend by week","Calendar-aligned delivery cost for paid demand channels.",bars(weekly(paid,"cost"),shortUsd)),
-    brandAwareness(),
+    brandImpact(),
     box("Optimization queue","Example review items for the performance owner.",defs([["Search terms","Review high-spend themes with mature accepted-lead evidence."],["Landing path","Confirm product routing and compare accepted outcomes per session after the consent baseline."],["Creative","Inspect concepts and rights status before requesting new cuts or copy."]]),true)
   );
 }
@@ -403,7 +475,7 @@ const briefs = {
   executive:["Compare sourced pipeline, accepted leads and collected fees by offering and primary source for the selected cohort.","Flag immature cohorts and the top difference between spend share and SAL share.","Explain the implication for January allocation in one plain-language sentence.","Propose one action, a named business owner and the next review date."],
   sales:["Show accepted leads, held meetings, rejection counts and current-stage age for the selected cohorts.","Identify one conversion bottleneck or incomplete disposition.","Account for cohort age before interpreting the gap.","Propose a CRM hygiene or handoff change for Loan and the Salesforce admin."],
   engineering:["List stale inputs, unmatched joins and synthetic lead check results.","Isolate the first broken checkpoint and state which published metrics it affects.","Explain what decisions should wait for the feed or join to recover.","Assign a verifier and require reconciliation before publishing changes."],
-  media:["Show demand spend against plan, accepted leads, held meetings and cost per stage. Report company-wide brand spend and impressions for the period.","Flag high-cost segments using comparable cohort age.","Explain the tradeoff between pacing and qualified volume.","Propose a bounded change for review with its verification metric."],
+  media:["Show demand spend and accepted leads for the selected cohort. Show brand delivery for the selected period.","With a valid holdout, estimate additional accepted leads and compare demand-only and combined cost.","Check cohort age, uncertainty and whether opportunity value supports the additional spend.","Review the next creative and spend decision with Marketing and Sales."],
   seo:["Show Search Console visibility and CRM-qualified outcome trends at supported grains.","Flag high-visibility pages with weak downstream progression where a valid join exists.","Explain whether the evidence supports an SEO, site-proof or instrumentation change.","Name the landing-page task owner and a metric for the next check."],
   creative:["List the assets, copy versions and approval states in scope.","Surface one bottleneck or credible testable pattern.","Explain what creative or proof change could address it.","Request one rights-cleared variation with approval and QA owners."],
   partners:["Show program cost, sourced outcomes and influenced outcomes separately.","Flag missing Salesforce Campaign IDs, cost or maturity evidence.","Explain which evidence would change the renewal decision.","Assign a follow-up to Partnerships or Events and name the readback."]
@@ -430,7 +502,13 @@ function exampleBrief(rows) {
       return ["Six of seven example feeds are on schedule. The synthetic form submission matched one warehouse inquiry.","The partner/event upload is late and Salesforce has one known delay.","The program cost readout is incomplete until the owner reconciles the upload.","Engineering asks Events and RevOps to backfill and verify cost and stage totals before publishing."];
     case "media": {
       const brand = brandInPeriod();
-      return ["Paid demand cost "+usd(total(paid,"cost"))+" for "+n(paidSal)+" sales-accepted leads. Company-wide brand delivery in the period cost "+usd(total(brand,"spend"))+" and recorded "+n(total(brand,"impressions"))+" impressions.","Demand cost per accepted lead is "+cp(total(paid,"cost"),paidSal)+". Brand delivery used "+(total(brand,"plan") ? ratio(total(brand,"spend"),total(brand,"plan"))+" of its sample period plan." : "no sample budget in this period."),"Compare demand cohorts at the same age. Use brand delivery to check pacing and a separate design to assess lift.","Review accepted stages and campaign ID coverage for demand. Review brand placements and delivery against its plan."];
+      const example = brandStudyReadout();
+      return [
+        "Paid demand cost "+usd(total(paid,"cost"))+" for "+n(paidSal)+" sales-accepted leads. Company-wide brand delivery cost "+usd(total(brand,"spend"))+" in the selected period.",
+        "Selected demand cost per accepted lead is "+cp(total(paid,"cost"),paidSal)+". In the separate worked comparison, the brand markets had "+n(example.additionalAccepted)+" additional accepted leads after accounting for the holdout trend.",
+        "In the worked comparison, demand cost per paid-source accepted lead fell to "+usd(example.demandWith)+" from the holdout’s "+usd(example.demandWithout)+". Combined cost per all-source accepted lead rose to "+usd(example.combinedWith)+" from "+usd(example.combinedWithout)+". Review opportunity progression before deciding to scale.",
+        "Marketing pairs comparable markets, keeps demand activity steady and checks spillover. Sales verifies accepted leads and opportunities at the same cohort age. Use those findings to refine the next brand and demand creative brief."
+      ];
     }
     case "seo": {
       const landing = seoLandingPages(organic);
