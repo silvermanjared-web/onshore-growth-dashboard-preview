@@ -47,7 +47,7 @@
     <div id="dashboard"></div>
     <details class="methods"><summary>Metric definitions and attribution</summary>
       <p>Inquiries and stages are synthetic, deduplicated inquiry-cohort counts. SAL means Sales accepted the inquiry for follow-up. SQL means Sales confirmed qualification. Held means an AE meeting occurred. Open sourced pipeline is gross open opportunity value at the stage snapshot. Each opportunity has one primary source. Cash collected is a separate Finance measure by receipt date and may include receipts from earlier or unknown acquisition cohorts.</p>
-      <p>Paid cost per SAL divides paid-media spend by accepted leads with a paid primary source. All-channel SAL includes paid and nonpaid sources. Partner and event costs use fully loaded allocated cost in the demo. Sourced and influenced opportunity sets can overlap. Assists stay separate from sourced totals. Incrementality requires a separate design.</p>
+      <p>Paid cost per SAL divides paid demand spend by accepted leads with a paid demand source. All-channel SAL includes paid and nonpaid sources. Brand awareness has its own company-wide plan, spend and impressions. Exposure measures delivery, and a separate study would measure lift. Partner and event costs use fully loaded allocated cost in the demo. Sourced and influenced opportunity sets can overlap. Assists stay separate from sourced totals. Incrementality requires a separate design.</p>
       <p>§179D inquiries do not establish eligibility. Production qualification needs an approved construction-start and eligibility disposition from Sales and Tax. The period selects inquiry cohorts or receipt dates, according to the metric. Stage outcomes use a common January 31, 2027 snapshot, so later cohorts have had less time to mature. Sample checks compare stage balances and receipts with the fictional control totals. Empty denominators display as a dash.</p>
       <p>Sales dispositions illustrate how marketing-qualified inquiries split into accepted, rejected and pending decisions. Rejection percentages use only rejected MQLs as the denominator. Age is calendar days in the current stage through the report cutoff. Stage assignments and entry dates are simulated for the same open opportunities counted in the selected cohort.</p>
     </details>
@@ -81,6 +81,12 @@ const launchWeeks = [
   {label:"Jan 25",paidPace:.76, otherPace:.95, qualification:.50, paidBudget:9600}
 ];
 const weeks = launchWeeks.map(week=>week.label);
+const brandDelivery = [
+  {plan:0,    spend:0,    impressions:0},
+  {plan:0,    spend:0,    impressions:0},
+  {plan:1200, spend:800,  impressions:52000},
+  {plan:2400, spend:1500, impressions:96000}
+];
 const paidOfferingShare = [.7,.3];
 const productNames = {all:"All offerings",rd:"§41 R&D Tax Credit","179d":"§179D Tax Deduction"};
 const snapshot = {short:"Jan 31", full:"Jan 31, 2027"};
@@ -113,7 +119,7 @@ const viewMeta = {
   executive:{name:"Executive", title:"Growth at a glance", summary:"January launch traction, open pipeline and cash receipts.",filter:"Pipeline and SAL by inquiry cohort. Cash by receipt date."},
   sales:{name:"Sales",title:"Lead quality and follow-up",summary:"Acceptance, held meetings, rejection reasons and time in stage.",filter:"Period and offering filter the Sales metrics. The process checklist stays fixed."},
   engineering:{name:"Engineering",title:"Measurement health",summary:"Source freshness, reconciliation, consent and our end-to-end lead test.",filter:"Operational checks use a single environment snapshot."},
-  media:{name:"Media",title:"Media performance",summary:"Paid pacing, acquisition cost and downstream quality by channel.",filter:"Applies to paid delivery and inquiry cohorts."},
+  media:{name:"Media",title:"Media performance",summary:"Demand acquisition pacing and brand awareness delivery.",filter:"Demand follows period and offering. Brand awareness follows period."},
   seo:{name:"SEO",title:"Organic search",summary:"Visibility and qualified demand, with an agency-facing landing page view.",filter:"Applies to organic cohorts. Public search queries remain aggregate."},
   creative:{name:"Creative",title:"Creative review",summary:"Review asset thumbnails, copy variants and the decision behind the next test.",filter:"Offering filters assets. Review status uses a single snapshot."},
   partners:{name:"Partners & Events",title:"Partners and events",summary:"Show the contribution of partner and event programs with a clear cost basis.",filter:"Applies to results and allocated costs for partner and event cohorts."}
@@ -181,7 +187,7 @@ function executive(rows) {
   return kpis([
     kpi("Open sourced pipeline",shortUsd(open),usd(open)+" across "+n(total(rows,"openOpp"))+" open opps as of "+snapshot.short),
     kpi("Sales-accepted leads",n(total(rows,"sal")),"All channels · "+n(paidSal)+" paid + "+n(total(rows,"sal")-paidSal)+" other"),
-    kpi("Paid cost per SAL",cp(paidSpend,paidSal),usd(paidSpend)+" paid spend ÷ "+n(paidSal)+" paid-source SAL"),
+    kpi("Paid cost per SAL",cp(paidSpend,paidSal),usd(paidSpend)+" demand spend ÷ "+n(paidSal)+" paid-source SAL"),
     kpi("Cash collected",shortUsd(cash),usd(cash)+" by receipt date · pre-launch or unlinked")
   ])+stacked(
     box("Open pipeline by inquiry week","Open opportunity value as of "+snapshot.full+".",bars(weekly(rows,"pipeline"),shortUsd)),
@@ -282,6 +288,20 @@ function engineering() {
     box("Access and safeguards","Engineering owns production permissions and deployments.",defs([["Visibility","Sample health view is aggregate. Detailed tracing stays with Engineering and RevOps."],["Release","Smoke-test consent, source mapping and the funnel after each change."],["Fallback","Keep the prior approved report mart until the new source has reconciled."]]),true)
   );
 }
+function brandInPeriod() {
+  const {firstWeek,lastWeek} = currentPeriod();
+  return brandDelivery.slice(firstWeek,lastWeek+1).map((row,index)=>({week:weeks[firstWeek+index],...row}));
+}
+
+function brandAwareness() {
+  const delivery = brandInPeriod();
+  const figures = row=>[usd(row.plan),usd(row.spend),n(row.impressions)];
+  const periodTotals = {plan:total(delivery,"plan"),spend:total(delivery,"spend"),impressions:total(delivery,"impressions")};
+  const rows = delivery.map(row=>[row.week,...figures(row)]);
+  return box("Brand awareness","Company-wide sample delivery for the selected period. Impressions count exposures, including repeat views.",
+    table(["Week","Plan","Spend","Impressions"],[...rows,["Period total",...figures(periodTotals)]],[1,2,3]),true);
+}
+
 function media(rows) {
   const paid = rows.filter(r=>r.type==="paid");
   const spend = total(paid,"cost");
@@ -290,13 +310,14 @@ function media(rows) {
   const budgetShare = offeringInScope("rd") && offeringInScope("179d") ? 1 : offeringInScope("rd") ? paidOfferingShare[0] : paidOfferingShare[1];
   const plan = weeksInScope.reduce((budget,wi)=>budget+launchWeeks[wi].paidBudget*budgetShare,0);
   return kpis([
-    kpi("Media spend",shortUsd(spend),usd(spend)+" · paid channels only"),
-    kpi("Plan used",ratio(spend,plan),usd(plan)+" phased sample budget in scope"),
-    kpi("Paid cost per SAL",cp(spend,paidSal),usd(spend)+" paid spend ÷ "+n(paidSal)+" paid-source SAL"),
+    kpi("Demand spend",shortUsd(spend),usd(spend)+" · paid demand channels"),
+    kpi("Demand plan used",ratio(spend,plan),usd(plan)+" phased sample demand budget in scope"),
+    kpi("Paid cost per SAL",cp(spend,paidSal),usd(spend)+" demand spend ÷ "+n(paidSal)+" paid-source SAL"),
     kpi("Cost per held",cp(spend,total(paid,"held")),"Paid cost / held meetings")
   ])+stacked(
     box("Paid channel scorecard","Each cost per SAL uses spend and paid-source SAL from the same channel.",table(["Channel","Spend","Inquiries","Paid SAL","Cost/SAL","Held"],channels(paid,(name,data)=>[name,usd(total(data,"cost")),n(total(data,"inquiries")),n(total(data,"sal")),cp(total(data,"cost"),total(data,"sal")),n(total(data,"held"))]),[1,2,3,4,5])),
-    box("Spend by inquiry week","Calendar-aligned channel delivery cost.",bars(weekly(paid,"cost"),shortUsd)),
+    box("Demand spend by week","Calendar-aligned delivery cost for paid demand channels.",bars(weekly(paid,"cost"),shortUsd)),
+    brandAwareness(),
     box("Optimization queue","Example review items for the performance owner.",defs([["Search terms","Review high-spend themes with mature accepted-lead evidence."],["Landing path","Confirm product routing and compare accepted outcomes per session after the consent baseline."],["Creative","Inspect concepts and rights status before requesting new cuts or copy."]]),true)
   );
 }
@@ -382,7 +403,7 @@ const briefs = {
   executive:["Compare sourced pipeline, accepted leads and collected fees by offering and primary source for the selected cohort.","Flag immature cohorts and the top difference between spend share and SAL share.","Explain the implication for January allocation in one plain-language sentence.","Propose one action, a named business owner and the next review date."],
   sales:["Show accepted leads, held meetings, rejection counts and current-stage age for the selected cohorts.","Identify one conversion bottleneck or incomplete disposition.","Account for cohort age before interpreting the gap.","Propose a CRM hygiene or handoff change for Loan and the Salesforce admin."],
   engineering:["List stale inputs, unmatched joins and synthetic lead check results.","Isolate the first broken checkpoint and state which published metrics it affects.","Explain what decisions should wait for the feed or join to recover.","Assign a verifier and require reconciliation before publishing changes."],
-  media:["Show spend, approved plan, accepted leads, held meetings and cost per stage.","Flag high-cost segments using comparable cohort age.","Explain the tradeoff between pacing and qualified volume.","Propose a bounded change for review with its verification metric."],
+  media:["Show demand spend against plan, accepted leads, held meetings and cost per stage. Report company-wide brand spend and impressions for the period.","Flag high-cost segments using comparable cohort age.","Explain the tradeoff between pacing and qualified volume.","Propose a bounded change for review with its verification metric."],
   seo:["Show Search Console visibility and CRM-qualified outcome trends at supported grains.","Flag high-visibility pages with weak downstream progression where a valid join exists.","Explain whether the evidence supports an SEO, site-proof or instrumentation change.","Name the landing-page task owner and a metric for the next check."],
   creative:["List the assets, copy versions and approval states in scope.","Surface one bottleneck or credible testable pattern.","Explain what creative or proof change could address it.","Request one rights-cleared variation with approval and QA owners."],
   partners:["Show program cost, sourced outcomes and influenced outcomes separately.","Flag missing Salesforce Campaign IDs, cost or maturity evidence.","Explain which evidence would change the renewal decision.","Assign a follow-up to Partnerships or Events and name the readback."]
@@ -407,8 +428,10 @@ function exampleBrief(rows) {
     }
     case "engineering":
       return ["Six of seven example feeds are on schedule. The synthetic form submission matched one warehouse inquiry.","The partner/event upload is late and Salesforce has one known delay.","The program cost readout is incomplete until the owner reconciles the upload.","Engineering asks Events and RevOps to backfill and verify cost and stage totals before publishing."];
-    case "media":
-      return ["Paid delivery cost "+shortUsd(total(paid,"cost"))+" for "+n(paidSal)+" sales-accepted leads in this sample.","The resulting cost per accepted lead is "+cp(total(paid,"cost"),paidSal)+".","Qualified acquisition cost gives the operator a stronger pacing signal when cohorts have comparable maturity.","Performance Marketing reviews spend, accepted stages and campaign ID coverage before proposing a budget shift."];
+    case "media": {
+      const brand = brandInPeriod();
+      return ["Paid demand cost "+usd(total(paid,"cost"))+" for "+n(paidSal)+" sales-accepted leads. Company-wide brand delivery in the period cost "+usd(total(brand,"spend"))+" and recorded "+n(total(brand,"impressions"))+" impressions.","Demand cost per accepted lead is "+cp(total(paid,"cost"),paidSal)+". Brand delivery used "+(total(brand,"plan") ? ratio(total(brand,"spend"),total(brand,"plan"))+" of its sample period plan." : "no sample budget in this period."),"Compare demand cohorts at the same age. Use brand delivery to check pacing and a separate design to assess lift.","Review accepted stages and campaign ID coverage for demand. Review brand placements and delivery against its plan."];
+    }
     case "seo": {
       const landing = seoLandingPages(organic);
       const findings = landing.map(page=>page.theme+": "+n(page.clicks)+" clicks").join("; ");
