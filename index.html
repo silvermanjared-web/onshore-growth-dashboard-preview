@@ -1,0 +1,489 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<meta name="description" content="Interactive Onshore growth reporting prototype with synthetic sample figures.">
+<title>Onshore · Growth reporting preview</title>
+<style>
+  :root{color-scheme:light;--ink:#171716;--paper:#f8f7f3;--white:#fffefa;--accent:#a3314b;--line:#c9c4b9;--muted:#625d54;--soft:#eeeae0;--good:#355c4b;--serif:"Instrument Serif","Iowan Old Style","Palatino Linotype",Georgia,serif;--sans:"Instrument Sans",Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;--mono:"IBM Plex Mono",ui-monospace,monospace}
+  *{box-sizing:border-box} body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--sans);line-height:1.5} button,select,textarea{font:inherit;color:inherit} button,select{cursor:pointer} button:focus-visible,select:focus-visible,a:focus-visible,[tabindex="0"]:focus-visible,textarea:focus-visible{outline:3px solid var(--accent);outline-offset:3px}
+  .wrap{width:min(1190px,calc(100% - 80px));margin:auto}.masthead{background:var(--ink);color:var(--paper)}.masthead .wrap{min-height:60px;display:flex;align-items:center;justify-content:space-between;gap:16px}
+  .wordmark{font:700 24px/1 var(--sans);letter-spacing:-.065em}.wordmark span{font-weight:400;letter-spacing:-.025em;color:#dcd8cd;margin-left:15px;padding-left:14px;border-left:1px solid #777268;font-size:14px}.sample{font:500 10px/1.2 var(--mono);text-transform:uppercase;letter-spacing:.1em;color:#f5d9df}
+  .tabs{display:flex;gap:7px;border-bottom:1px solid var(--line);overflow-x:auto;scrollbar-width:thin}.tabs button{background:none;border:0;border-bottom:3px solid transparent;flex-shrink:0;padding:17px 13px 13px;font-weight:640;color:var(--muted);white-space:nowrap}.tabs button[aria-selected="true"]{border-bottom-color:var(--accent);color:var(--ink)}.tabs button:hover{background:#eeeae0}.tabs button:focus-visible{outline-offset:-4px}
+  .hero{padding:26px 0 20px;display:flex;justify-content:space-between;align-items:end;gap:24px}.hero h1{font:400 clamp(43px,5.6vw,72px)/.96 var(--serif);letter-spacing:-.065em;margin:0 0 10px}.hero p{margin:0;max-width:68ch;color:var(--muted);font-size:15px}
+  .brief-btn,.close,.copy{background:var(--ink);color:var(--paper);font-size:13px;font-weight:650;border:1px solid var(--ink);padding:9px 13px;white-space:nowrap}.brief-btn:hover,.close:hover,.copy:hover{background:var(--accent);border-color:var(--accent)}
+  .filters{display:flex;justify-content:space-between;gap:12px;align-items:end;border-top:1px solid var(--line);padding:11px 0 14px}.filter-controls{display:flex;gap:10px;flex-wrap:wrap}.filters label{font:600 10px/1.2 var(--mono);text-transform:uppercase;letter-spacing:.045em;color:var(--muted);display:flex;flex-direction:column;gap:5px}.filters select{padding:6px 31px 6px 9px;background:var(--white);border:1px solid var(--line);border-radius:0;font-family:var(--sans);font-weight:600;font-size:13px;color:var(--ink);max-width:225px}.filter-description{font-size:12px;color:var(--muted);text-align:right;max-width:38ch}
+  .filter-description{max-width:65ch}.report-status{font:500 10px/1.5 var(--mono);margin-top:4px;color:var(--ink)}
+  .kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));border-block:1px solid var(--ink);margin-bottom:23px}.kpi{padding:12px 15px 12px 0;min-width:0}.kpi + .kpi{border-left:1px solid var(--line);padding-left:16px}.kpi .label{font-size:12px;font-weight:650;line-height:1.2}.kpi .number{font:400 clamp(32px,4vw,53px)/1.06 var(--serif);letter-spacing:-.045em;white-space:nowrap;margin:4px 0;color:var(--ink)}.kpi .note{font-size:11px;line-height:1.3;color:var(--muted)}
+  .grid{display:grid;grid-template-columns:minmax(0,1.58fr) minmax(0,1fr);gap:15px;align-items:stretch}.box{min-width:0;background:var(--white);border:1px solid var(--line);padding:15px 17px}.box h2{font:400 28px/1.04 var(--serif);margin:0 0 5px;letter-spacing:-.04em}.box .intro{color:var(--muted);margin:0 0 13px;font-size:12px}.box.full{grid-column:1/-1}
+  .chart{margin:13px 0 0;display:grid;gap:10px}.bar-row{display:grid;grid-template-columns:minmax(112px,1.1fr) minmax(55px,2.5fr) minmax(30px,.65fr);align-items:center;gap:9px;font-size:12px}.bar-label{overflow-wrap:anywhere}.bar-value{font:600 11px var(--mono);text-align:right}.track{height:12px;background:var(--soft)}.track span{display:block;height:100%;background:var(--accent)}.chart .bar-row:nth-child(even) .track span{background:#796d61}
+  .table-wrap{overflow-x:auto}.scroll-note{display:none}.table{width:100%;border-collapse:collapse;font-size:12px;text-align:left;white-space:nowrap}.table th{font-weight:650;color:var(--muted);border-bottom:1px solid var(--ink);font-size:10px;line-height:1.3;vertical-align:bottom;white-space:normal}.table th,.table td{padding:7px 9px 7px 0}.table td{border-bottom:1px solid #e4dfd5}.table tbody tr:last-child td{border-bottom:0}.table td.num,.table th.num{text-align:right;font-variant-numeric:tabular-nums}.table td:last-child,.table th:last-child{padding-right:0}
+  .tag{font-size:10px;font-weight:700;white-space:nowrap;border:1px solid var(--line);padding:2px 6px;display:inline-block}.tag.good{color:var(--good);border-color:#a5b2a8}.tag.warn{color:#8b243d;border-color:#c6a1a8}.ledger{display:grid;gap:9px;font-size:13px}.ledger > div{display:grid;grid-template-columns:104px 1fr;gap:8px;padding:7px 0;border-bottom:1px solid #e4dfd5}.ledger > div:last-child{border-bottom:0}.ledger dt{font-weight:680}.ledger dd{margin:0;color:var(--muted)}
+  .asset-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}.asset{min-width:0;display:flex;flex-direction:column;background:var(--white);border:1px solid var(--line)}.thumbnail{background:#2c3e34;color:#fffefa;min-height:128px;display:flex;align-items:end;justify-content:space-between;gap:10px;padding:14px;isolation:isolate;position:relative;overflow:hidden}.thumbnail.project-thumb{background:#4a3027;background-image:linear-gradient(120deg,#3a2922 18%,#745344 100%)}.thumbnail.copy-thumb{background:#ded6c8;color:var(--ink)}.thumbnail:before{content:"";inset:0;z-index:-1;position:absolute;background-image:linear-gradient(155deg,transparent 57%,#ffffff20 57% 58%,transparent 58% 61%,#ffffff20 61% 62%,transparent 62% 66%,#ffffff20 66% 67%,transparent 67%)}.thumbnail strong{font:400 26px/1.03 var(--serif);max-width:14ch}.thumbnail span{align-self:start;font:600 10px var(--mono);white-space:nowrap}.asset-body{padding:12px 14px;display:grid;gap:6px}.asset-body p{margin:0;color:var(--muted);font-size:12px}.asset-body details{font-size:12px;margin-top:3px}.asset-body summary{font-weight:650;cursor:pointer}.asset-body details p{padding-top:5px}.empty{padding:12px;font-size:13px;color:var(--muted);background:var(--soft)}
+  .methods{margin:20px 0 34px;border-top:1px solid var(--line);padding-top:11px;color:var(--muted);font-size:12px}.methods summary{cursor:pointer;font-weight:700;color:var(--ink)}.methods p{max-width:95ch;margin:7px 0}.live-status{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap}
+  dialog{width:min(670px,calc(100% - 30px));padding:22px;border:1px solid var(--ink);background:var(--paper);color:var(--ink)}dialog::backdrop{background:#17171699}.dialog-top{display:flex;justify-content:space-between;align-items:start;gap:12px}dialog h2{font:400 32px/1 var(--serif);margin:0 0 6px;letter-spacing:-.035em}dialog p{color:var(--muted);font-size:13px}.prompt{display:block;width:100%;min-height:75px;padding:9px;background:var(--white);border:1px solid var(--line);font-size:13px;margin-bottom:8px;resize:vertical}
+  @media(max-width:800px){.wrap{width:calc(100% - 38px)}.hero{align-items:start;flex-direction:column;gap:12px}.grid{grid-template-columns:1fr}.box.full{grid-column:auto}.asset-grid{grid-template-columns:1fr 1fr}}
+  @media(max-width:500px){.wrap{width:calc(100% - 28px)}.masthead .wrap{min-height:54px}.wordmark span{display:none}.sample{font-size:9px}.hero{padding-top:20px}.hero p{font-size:14px}.filters{align-items:start;flex-direction:column}.filter-description{text-align:left}.filters select{max-width:100%}.filters #product{min-width:min(228px,100%)}.kpis{grid-template-columns:1fr 1fr}.kpi:nth-child(3){border-left:0;padding-left:0}.kpi:nth-child(n+3){border-top:1px solid var(--line)}.kpi .number{font-size:38px}.asset-grid{grid-template-columns:1fr}.box{padding:12px}.table td{white-space:normal}.table td,.table th{padding-right:6px}.bar-row{grid-template-columns:minmax(100px,1.2fr) minmax(45px,1.7fr) minmax(28px,.55fr)}}
+</style>
+</head>
+<body>
+<header class="masthead"><div class="wrap"><div class="wordmark">onshore<span>Growth reporting</span></div><div class="sample">Prototype · synthetic sample figures</div></div></header>
+<div class="wrap">
+  <nav class="tabs" aria-label="Dashboard views" role="tablist"></nav>
+  <main id="report" role="tabpanel" tabindex="0">
+    <header class="hero"><div><h1 id="view-title"></h1><p id="view-summary"></p></div><button type="button" class="brief-btn" id="brief">Open FFIA brief</button></header>
+    <section class="filters" aria-label="Report filters">
+      <div class="filter-controls">
+        <label>Sample period<select id="period"><option value="all">Jan 4–31, 2027</option><option value="early">Jan 4–17, 2027</option><option value="late">Jan 18–31, 2027</option></select></label>
+        <label>Offering<select id="product"><option value="all">All offerings</option><option value="rd">§41 R&amp;D Tax Credit</option><option value="179d">§179D Tax Deduction</option></select></label>
+      </div>
+      <div class="filter-description">
+        <div id="filter-description"></div>
+        <div id="report-status" class="report-status"></div>
+      </div>
+    </section>
+    <div id="dashboard"></div>
+    <details class="methods"><summary>Metric definitions and attribution</summary>
+      <p>Inquiries and stages are synthetic, deduplicated inquiry-cohort counts. SAL means Sales accepted the inquiry for follow-up. SQL means Sales confirmed qualification. Held means an AE meeting occurred. Open sourced pipeline is gross open opportunity value at the stage snapshot. Each opportunity has one primary source. Cash collected is a separate Finance measure by receipt date and may include receipts from earlier or unknown acquisition cohorts.</p>
+      <p>Paid cost per SAL divides paid-media spend by accepted leads with a paid primary source. All-channel SAL includes paid and nonpaid sources. Partner and event costs use fully loaded allocated cost in the demo. Sourced and influenced opportunity sets can overlap. Assists stay separate from sourced totals. Incrementality requires a separate design.</p>
+      <p>§179D inquiries do not establish eligibility. Production qualification needs an approved construction-start and eligibility disposition from Sales and Tax. The period selects inquiry cohorts or receipt dates, according to the metric. Stage outcomes use a common January 31, 2027 snapshot, so later cohorts have had less time to mature. Sample checks compare stage balances and receipts with the fictional control totals. Empty denominators display as a dash.</p>
+      <p>Sales dispositions illustrate how marketing-qualified inquiries split into accepted, rejected and pending decisions. Rejection percentages use only rejected MQLs as the denominator. Age is calendar days in the current stage through the report cutoff. Stage assignments and entry dates are simulated for the same open opportunities counted in the selected cohort.</p>
+    </details>
+  </main>
+</div>
+<div id="status" class="live-status" role="status" aria-live="polite"></div>
+<dialog id="ffia" aria-labelledby="ffia-title">
+  <div class="dialog-top"><div><h2 id="ffia-title">FFIA decision brief</h2><p id="ffia-context"></p></div><button type="button" class="close" id="close">Close</button></div>
+  <dl class="ledger" id="ffia-content"></dl>
+  <label for="prompt"><strong>Example prompt for Claude</strong></label>
+  <p>This sample uses synthetic data. The prompt illustrates a future workflow with an approved connector and certified reporting view.</p>
+  <textarea class="prompt" id="prompt" readonly></textarea>
+  <button type="button" class="copy" id="copy">Copy prompt</button>
+</dialog>
+<script>
+"use strict";
+const $ = (id) => document.getElementById(id);
+const tabList = document.querySelector(".tabs");
+const channelPlan = [
+  { name:"Paid Search", type:"paid", spend:7800, response:[24,9], sal:[10,3] },
+  { name:"Paid Social", type:"paid", spend:3050, response:[19,8], sal:[5,2] },
+  { name:"Organic Search", type:"organic", spend:0, response:[15,5], sal:[7,2] },
+  { name:"Partners", type:"partner", spend:1700, response:[9,3], sal:[5,1] },
+  { name:"Events", type:"event", spend:4600, response:[12,5], sal:[6,2] },
+  { name:"Direct / other", type:"direct", spend:0, response:[7,2], sal:[3,1] }
+];
+const weeks = ["Jan 4", "Jan 11", "Jan 18", "Jan 25"];
+const productNames = {all:"All offerings",rd:"§41 R&D Tax Credit","179d":"§179D Tax Deduction"};
+const snapshot = {short:"Jan 31", full:"Jan 31, 2027"};
+const periods = {
+  all:{firstWeek:0,lastWeek:3,firstDate:"2027-01-04",lastDate:"2027-01-31",end:"Jan 31",receiptControl:{rd:153400,"179d":0}},
+  early:{firstWeek:0,lastWeek:1,firstDate:"2027-01-04",lastDate:"2027-01-17",end:"Jan 17",receiptControl:{rd:59000,"179d":0}},
+  late:{firstWeek:2,lastWeek:3,firstDate:"2027-01-18",lastDate:"2027-01-31",end:"Jan 31",receiptControl:{rd:94400,"179d":0}}
+};
+const receiptRows = [
+  {date:"2027-01-10",product:"rd",amount:35400,origination:"2026-12-15"},
+  {date:"2027-01-17",product:"rd",amount:23600,origination:null},
+  {date:"2027-01-22",product:"rd",amount:59000,origination:"2027-01-04"},
+  {date:"2027-01-29",product:"rd",amount:35400,origination:"2027-01-11"}
+];
+const baseRows = weeks.flatMap((week, wi) => channelPlan.flatMap((source, si) => ["rd","179d"].map((product, pi) => {
+  const inquiries = source.response[pi] + ((wi+si)%3)-1;
+  const sal = source.sal[pi] + Number((wi+si+pi)%3 === 0);
+  const mql = sal + Math.ceil((inquiries-sal)*.53);
+  const sql = Math.floor(sal*(wi < 2 ? .79 : .61));
+  const held = Math.round(sql*(wi<2?.87:.76));
+  const opp = Math.round(held*(wi<2?.65:.62));
+  const won = wi<2 ? Math.floor(opp/2) : 0;
+  const openOpp = opp-won;
+  return {week, wi, product, channel:source.name, type:source.type, inquiries, mql, sal, sql, held, opp, openOpp, won, pipeline:openOpp*(pi===0 ? 21000+2500*si : 29500+1500*si), cost:Math.round(source.spend*(pi===0?.7:.3)*(1+(wi-1)*.07))};
+})));
+const viewMeta = {
+  executive:{name:"Executive", title:"Growth at a glance", summary:"Pipeline, spend and the decisions to make next.",filter:"Pipeline and SAL by inquiry cohort. Cash by receipt date."},
+  sales:{name:"Sales",title:"Lead quality and follow-up",summary:"Acceptance, held meetings, rejection reasons and time in stage.",filter:"Period and offering filter the Sales metrics. The process checklist stays fixed."},
+  engineering:{name:"Engineering",title:"Measurement health",summary:"Source freshness, reconciliation, consent and our end-to-end lead test.",filter:"Operational checks use a single environment snapshot."},
+  media:{name:"Media",title:"Media performance",summary:"Paid pacing, acquisition cost and downstream quality by channel.",filter:"Applies to paid delivery and inquiry cohorts."},
+  seo:{name:"SEO",title:"Organic search",summary:"Visibility and qualified demand, with an agency-facing landing page view.",filter:"Applies to organic cohorts. Public search queries remain aggregate."},
+  creative:{name:"Creative",title:"Creative review",summary:"Review asset thumbnails, copy variants and the decision behind the next test.",filter:"Offering filters assets. Review status uses a single snapshot."},
+  partners:{name:"Partners & Events",title:"Partners and events",summary:"Show the contribution of partner and event programs with a clear cost basis.",filter:"Applies to results and allocated costs for partner and event cohorts."}
+};
+let currentView = "executive";
+const clean = (value) => String(value).replace(/[&<>"']/g, (character)=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[character]));
+const integer = new Intl.NumberFormat("en-US",{maximumFractionDigits:0});
+const dollar = new Intl.NumberFormat("en-US",{style:"currency",currency:"USD",maximumFractionDigits:0});
+const compact = new Intl.NumberFormat("en-US",{style:"currency",currency:"USD",notation:"compact",maximumFractionDigits:1});
+const n = (value) => integer.format(value);
+const usd = (value) => dollar.format(value);
+const shortUsd = (value) => compact.format(value);
+const ratio = (top,bottom) => bottom ? (100*top/bottom).toFixed(0)+"%" : "—";
+const cp = (cost,count) => count ? usd(cost/count) : "—";
+const total = (rows,key) => rows.reduce((sum,row)=>sum+row[key],0);
+const tag = (label,style="") => ({markup:'<span class="tag '+style+'">'+clean(label)+'</span>'});
+const asCell = (value) => value && typeof value==="object" ? value.markup : clean(value);
+const periodLabel = () => $("period").selectedOptions[0].textContent;
+const productLabel = () => productNames[$("product").value];
+const currentPeriod = () => periods[$("period").value];
+const offeringInScope = product => $("product").value==="all" || product===$("product").value;
+const productInScope = row => offeringInScope(row.product);
+const currentRows = () => {
+  const {firstWeek,lastWeek} = currentPeriod();
+  return baseRows.filter(row => productInScope(row) && row.wi>=firstWeek && row.wi<=lastWeek);
+};
+const currentReceipts = () => {
+  const {firstDate,lastDate} = currentPeriod();
+  return receiptRows.filter(row => productInScope(row) && row.date>=firstDate && row.date<=lastDate);
+};
+function sampleStatus(rows) {
+  const pointInTime = currentView==="engineering" || currentView==="creative";
+  if (pointInTime) return "Sample snapshot "+snapshot.full+" · "+(currentView==="engineering"?"2 example exceptions":"Approval status only");
+  const {end,receiptControl} = currentPeriod();
+  const expectedCash = Object.entries(receiptControl).filter(([product])=>productInScope({product})).reduce((sum,[,amount])=>sum+amount,0);
+  const stageBalance = total(rows,"opp")===total(rows,"openOpp")+total(rows,"won");
+  const cashBalance = total(currentReceipts(),"amount")===expectedCash;
+  const matched = Number(stageBalance)+Number(cashBalance);
+  return "Window ends "+end+" · Stage cutoff "+snapshot.full+" · Sample tie-outs "+matched+"/2 matched";
+}
+const kpi = (label,value,note) => ({label,value,note});
+const kpis = (items) => '<section class="kpis" aria-label="Key figures">'+items.map(i=>'<div class="kpi"><div class="label">'+clean(i.label)+'</div><div class="number">'+clean(i.value)+'</div><div class="note">'+clean(i.note)+'</div></div>').join("")+'</section>';
+function box(title, intro, content, full=false) {
+  return '<section class="box'+(full?' full':'')+'"><h2>'+clean(title)+'</h2><p class="intro">'+clean(intro)+'</p>'+content+'</section>';
+}
+function table(headers, rows, numeric=[]) {
+  const cell = (value,i,element) => '<'+element+(numeric.includes(i)?' class="num"':'')+(element==="th"?' scope="col"':'')+'>'+asCell(value)+'</'+element+'>';
+  return '<div class="table-wrap"><table class="table"><thead><tr>'+headers.map((h,i)=>cell(h,i,"th")).join("")+'</tr></thead><tbody>'+rows.map(row=>'<tr>'+row.map((v,i)=>cell(v,i,"td")).join("")+'</tr>').join("")+'</tbody></table></div>';
+}
+function bars(items, formatter=n) {
+  const max = Math.max(1,...items.map(item=>item[1]));
+  return '<div class="chart">'+items.map(([name,value])=>'<div class="bar-row"><span class="bar-label">'+clean(name)+'</span><div class="track" aria-hidden="true"><span style="width:'+value/max*100+'%"></span></div><span class="bar-value">'+clean(formatter(value))+'</span></div>').join("")+'</div>';
+}
+const stacked = (...content) => '<div class="grid">'+content.join("")+'</div>';
+const defs = (items) => '<dl class="ledger">'+items.map(([label,value])=>'<div><dt>'+clean(label)+'</dt><dd>'+clean(value)+'</dd></div>').join("")+'</dl>';
+const channels = (rows, fn) => channelPlan.filter(p=>rows.some(r=>r.channel===p.name)).map(p=>fn(p.name,rows.filter(r=>r.channel===p.name)));
+const weekly = (rows, key) => weeks.filter((week,wi)=>rows.some(r=>r.wi===wi)).map(week=>[week,total(rows.filter(r=>r.week===week),key)]);
+const stages = [["Inquiry","inquiries"],["Marketing-qualified","mql"],["Sales-accepted","sal"],["Sales-qualified","sql"],["Meeting held","held"],["Opportunity","opp"]];
+function executive(rows) {
+  const paid = rows.filter(r=>r.type==="paid");
+  const paidSpend = total(paid,"cost");
+  const paidSal = total(paid,"sal");
+  const open = total(rows,"pipeline");
+  const cash = total(currentReceipts(),"amount");
+  return kpis([
+    kpi("Open sourced pipeline",shortUsd(open),usd(open)+" across "+n(total(rows,"openOpp"))+" open opps as of "+snapshot.short),
+    kpi("Sales-accepted leads",n(total(rows,"sal")),"All channels · "+n(paidSal)+" paid + "+n(total(rows,"sal")-paidSal)+" other"),
+    kpi("Paid cost per SAL",cp(paidSpend,paidSal),usd(paidSpend)+" paid spend ÷ "+n(paidSal)+" paid-source SAL"),
+    kpi("Cash collected",shortUsd(cash),usd(cash)+" by Finance receipt date")
+  ])+stacked(
+    box("Open pipeline by inquiry week","Open opportunity value as of "+snapshot.full+".",bars(weekly(rows,"pipeline"),shortUsd)),
+    box("Pipeline by primary source","One primary source per opportunity.",table(["Source","Open opportunities","Value"],channels(rows,(name,data)=>[name,n(total(data,"openOpp")),shortUsd(total(data,"pipeline"))]),[1,2])),
+    box("Decision for the next review","Example agenda for Dominic, Alexis, Loan and Finance.",defs([["Compare","Review paid-search and partner quality once cohorts have comparable maturity."],["Confirm","Reconcile Finance receipts by payment date. Some payments may come from earlier inquiry cohorts."],["Decide","Agree with Sales and Finance on the spend or tracking change for the next cycle."]]),true)
+  );
+}
+const rejectionReasons = [
+  "Outside target customer profile",
+  "No active project indicated",
+  "Timing or decision deferred",
+  "Missing intake details",
+  "Reason not recorded"
+];
+const openOpportunityStages = ["Discovery","Assessment","Proposal"];
+
+function salesDisposition(rows) {
+  const reasonCounts = rejectionReasons.map(() => 0);
+  let rejected = 0;
+  let pending = 0;
+  for (const row of rows) {
+    const unresolved = row.mql-row.sal;
+    const rejectedInRow = Math.floor(unresolved*(row.wi<2 ? .73 : .52));
+    const sourceIndex = channelPlan.findIndex(source => source.name===row.channel);
+    // Assign synthetic reasons consistently before aggregating any selected cohort.
+    const reasonCycle = [0,1,0,2,1,3,2,4,0,3];
+    for (let i=0; i<rejectedInRow; i++) {
+      const seed = i + sourceIndex + row.wi + (row.product==="rd" ? 0 : 2);
+      reasonCounts[reasonCycle[seed%reasonCycle.length]]++;
+    }
+    rejected += rejectedInRow;
+    pending += unresolved-rejectedInRow;
+  }
+  return {reasonCounts,rejected,pending};
+}
+
+function salesStageAges(rows) {
+  const daysInSample = (Date.parse(periods.all.lastDate)-Date.parse(periods.all.firstDate))/86_400_000;
+  const ages = openOpportunityStages.map(() => []);
+  for (const row of rows) {
+    const sourceIndex = channelPlan.findIndex(source => source.name===row.channel);
+    const daysSinceCohortStart = daysInSample-row.wi*7;
+    for (let i=0; i<row.openOpp; i++) {
+      const stage = (i+sourceIndex+row.wi+(row.product==="rd" ? 0 : 1))%openOpportunityStages.length;
+      const daysToStageEntry = (i*3+sourceIndex+stage*4)%(daysSinceCohortStart+1);
+      ages[stage].push(daysSinceCohortStart-daysToStageEntry);
+    }
+  }
+  return ages.map((stageAges,index) => {
+    const sorted = stageAges.sort((a,b)=>a-b);
+    const mid = Math.floor(sorted.length/2);
+    const median = sorted.length ? (sorted[mid]+sorted[Math.floor((sorted.length-1)/2)])/2 : null;
+    return [
+      openOpportunityStages[index],
+      n(sorted.length),
+      median===null ? "—" : String(median),
+      n(sorted.filter(age=>age>=15).length)
+    ];
+  });
+}
+
+function sales(rows) {
+  const salesAccepted = total(rows,"sal");
+  const {reasonCounts,rejected,pending} = salesDisposition(rows);
+  return kpis([
+    kpi("Sales-accepted leads",n(salesAccepted),"All channels · Salesforce stage acceptance"),
+    kpi("MQL → SAL",ratio(salesAccepted,total(rows,"mql")),"Sales-accepted ÷ marketing-qualified"),
+    kpi("Held meetings",n(total(rows,"held")),"AE meeting disposition"),
+    kpi("Opportunities",n(total(rows,"opp")),"One count per opportunity")
+  ])+stacked(
+    box("Cohort progression","Unique leads through held meeting. Opportunity count uses opportunity IDs.",bars(stages.map(([label,key])=>[label,total(rows,key)]))),
+    box("Source quality","Acceptance and meetings for the selected cohort.",table(["Source","MQL","SAL","Held","MQL → SAL"],channels(rows,(name,data)=>[name,n(total(data,"mql")),n(total(data,"sal")),n(total(data,"held")),ratio(total(data,"sal"),total(data,"mql"))]),[1,2,3,4])),
+    box("Rejection reasons",n(total(rows,"mql"))+" MQLs in scope · "+n(salesAccepted)+" accepted · "+n(rejected)+" rejected · "+n(pending)+" pending. Reasons are synthetic.",
+      table(["Reason","Rejected MQLs","Share of rejects"],rejectionReasons.map((reason,index)=>[reason,n(reasonCounts[index]),ratio(reasonCounts[index],rejected)]),[1,2])),
+    box("Open opportunity stage aging","Selected cohort as of "+snapshot.full+". Stages and entry dates are simulated. Age counts calendar days since entry into the current stage.",
+      table(["Current stage","Open opps","Median days","15+ days"],salesStageAges(rows),[1,2,3])),
+    box("Review queue","Fixed synthetic process checklist. Salesforce holds restricted record-level follow-up.",table(["Exception","Check","Routing"],[["Accepted, owner missing","Validate ownership handoff","Sales Ops"],["Disqualified, reason missing","Backfill reason and coach intake","Sales"],["Expected meeting disposition missing","Confirm held, rescheduled or canceled","Sales"]]),true)
+  );
+}
+function engineering() {
+  return kpis([
+    kpi("Source feeds","6 / 7","On expected freshness schedule"),
+    kpi("New form path","Pass","Synthetic entry through CRM"),
+    kpi("Unmatched join rate","2.1%","Sample form-to-CRM acceptance check"),
+    kpi("Open exceptions","2","Partner cost and CRM-stage lag")
+  ])+stacked(
+    box("Feed and reconciliation status","Single fictional operational snapshot.",table(["Feed","Freshness","Result"],[
+      ["GA4 / first-party events","4 h",tag("On schedule","good")],["Salesforce stages","4 h",tag("1 known delay","warn")],["Google Ads","12 h",tag("On schedule","good")],["Meta Ads","12 h",tag("On schedule","good")],["LinkedIn Ads","12 h",tag("On schedule","good")],["Search Console","72 h",tag("On schedule","good")],["Partner and event upload","8 d",tag("Late","warn")]
+    ])),
+    box("Synthetic submission trace","Never send the synthetic test to bidding.",table(["Checkpoint","Example result"],[
+      ["Consent denied",tag("Optional tags suppressed","good")],["BotID and trackLead",tag("Expected form path","good")],["UTM, click ID, partner code",tag("Preserved with consent","good")],["CRM record and product",tag("Matched","good")],["Warehouse and reporting",tag("One deduped inquiry","good")],["Ads conversion import",tag("Test excluded","good")]
+    ])),
+    box("Access and safeguards","Engineering owns production permissions and deployments.",defs([["Visibility","Sample health view is aggregate. Detailed tracing stays with Engineering and RevOps."],["Release","Smoke-test consent, source mapping and the funnel after each change."],["Fallback","Keep the prior approved report mart until the new source has reconciled."]]),true)
+  );
+}
+function media(rows) {
+  const paid = rows.filter(r=>r.type==="paid");
+  const spend = total(paid,"cost");
+  const paidSal = total(paid,"sal");
+  const plan = [...new Set(rows.map(r=>r.wi))].length * ($("product").value==="rd"?8000:$("product").value==="179d"?3500:11500);
+  return kpis([
+    kpi("Media spend",shortUsd(spend),usd(spend)+" · paid channels only"),
+    kpi("Plan used",ratio(spend,plan),"Compared with illustrative period plan"),
+    kpi("Paid cost per SAL",cp(spend,paidSal),usd(spend)+" paid spend ÷ "+n(paidSal)+" paid-source SAL"),
+    kpi("Cost per held",cp(spend,total(paid,"held")),"Paid cost / held meetings")
+  ])+stacked(
+    box("Paid channel scorecard","Each cost per SAL uses spend and paid-source SAL from the same channel.",table(["Channel","Spend","Inquiries","Paid SAL","Cost/SAL","Held"],channels(paid,(name,data)=>[name,usd(total(data,"cost")),n(total(data,"inquiries")),n(total(data,"sal")),cp(total(data,"cost"),total(data,"sal")),n(total(data,"held"))]),[1,2,3,4,5])),
+    box("Spend by inquiry week","Calendar-aligned channel delivery cost.",bars(weekly(paid,"cost"),shortUsd)),
+    box("Optimization queue","Example review items for the performance owner.",defs([["Search terms","Review high-spend themes with mature accepted-lead evidence."],["Landing path","Confirm product routing and compare accepted outcomes per session after the consent baseline."],["Creative","Inspect concepts and rights status before requesting new cuts or copy."]]),true)
+  );
+}
+const seoPaths = [
+  {product:"rd",path:"/services/r-and-d-tax-credit",theme:"R&D Tax Credit",weight:.60},
+  {product:"rd",path:"/learn/form-6765",theme:"Section G readiness",weight:.40},
+  {product:"179d",path:"/services/179d",theme:"179D eligibility",weight:1}
+];
+const seoClicks = rows => total(rows,"inquiries")*13+rows.length*4;
+
+function seoLandingPages(organic) {
+  return seoPaths.flatMap(page => {
+    const cohort = organic.filter(row=>row.product===page.product);
+    if (!cohort.length) return [];
+    const productClicks = seoClicks(cohort);
+    const clicks = page.weight===.40 ? productClicks-Math.round(productClicks*.60) : Math.round(productClicks*page.weight);
+    return [{...page,clicks}];
+  });
+}
+
+function seoActionQueue(landing) {
+  const actions = [["Site hygiene","Validate indexing, canonical paths, Core Web Vitals and metadata for the pages in scope."]];
+  if (landing.some(page=>page.product==="rd")) actions.push(["Content proof","Move the Form 6765 Section G guide into priority R&D journeys and surface named reviewers."]);
+  if (landing.some(page=>page.product==="179d")) actions.push(["179D accuracy","Publish approved wording and review qualified share of inquiries after the cutoff copy is live."]);
+  return actions;
+}
+
+function seo(rows) {
+  const organic = rows.filter(row=>row.type==="organic");
+  const clicks = seoClicks(organic);
+  const impressions = clicks*31+organic.length*127;
+  const landing = seoLandingPages(organic);
+  return kpis([
+    kpi("Search clicks",n(clicks),"Search Console · aggregate"),
+    kpi("Search impressions",n(impressions),"Search Console · aggregate"),
+    kpi("Organic-source SAL",n(total(organic,"sal")),"First-party source to CRM"),
+    kpi("Organic-source opps",n(total(organic,"opp")),"Verified stage · CRM")
+  ])+stacked(
+    box("Priority landing pages","Search Console aggregated by page. CRM outcome reporting stays at landing-page/source grain.",table(["Landing path","Content theme","Clicks"],landing.map(page=>[page.path,page.theme,n(page.clicks)]),[2])),
+    box("Organic SAL by inquiry week","Use the cohort view to judge quality after stage lag.",bars(weekly(organic,"sal"))),
+    box("Agency action queue","Agency report views use curated aggregates; the operational team sees CRM and consent details.",defs(seoActionQueue(landing)),true)
+  );
+}
+const assets = [
+  {key:"rd",title:"Show the work behind the credit",kind:"Video · 15 sec",treatment:"",status:"Storyboard",line:"Expert-led explanation for agricultural operators.",copy:"What records help document agricultural experimentation? See what an eligibility review looks like.",detail:"Example thumbnail only. Production would link a rights-cleared frame and the approved video."},
+  {key:"179d",title:"Does this project qualify?",kind:"Static · 1:1",treatment:"project-thumb",status:"Tax review",line:"Service-page proof and eligibility framing for A&E audiences.",copy:"Review whether a project may meet the §179D requirements. Eligibility and construction timing require review.",detail:"Synthetic creative sample. Tax reviews eligibility language and disclosures before any launch."},
+  {key:"rd",title:"What your CPA receives",kind:"Text · search",treatment:"copy-thumb",status:"Copy review",line:"Buyer reassurance for finance teams and advisors.",copy:"See the documentation package your CPA receives. Onshore works alongside your existing accountant.",detail:"Test the proof-led message against a direct eligibility-assessment variant after Tax and Brand approval."}
+];
+const scopedAssets = () => assets.filter(asset=>offeringInScope(asset.key));
+
+function creative() {
+  const filtered = scopedAssets();
+  return kpis([
+    kpi("Concepts shown",n(filtered.length),"Filtered by product"),
+    kpi("Video concepts",n(filtered.filter(a=>a.kind.startsWith("Video")).length),"Thumbnail treatment"),
+    kpi("Copy variants",n(filtered.filter(a=>a.kind.startsWith("Text")).length),"Search-ad treatment"),
+    kpi("Approved to launch","0","Illustrative queue only")
+  ])+stacked(box("Asset review","Review concept thumbnails, current copy, approval status and test rationale.",'<div class="asset-grid">'+filtered.map(a=>'<article class="asset"><div class="thumbnail '+a.treatment+'">'+'<strong>'+clean(a.title)+'</strong><span>'+clean(a.kind)+'</span></div><div class="asset-body"><div>'+asCell(tag(a.status,a.status==="Tax review"?"warn":""))+'</div><p>'+clean(a.line)+'</p><details><summary>Inspect copy and review note</summary><p>'+clean(a.copy)+'</p><p>'+clean(a.detail)+'</p></details></div></article>').join("")+'</div>',true),
+    box("Review handoff","Creative requests reference a versioned asset and governed campaign ID.",defs([["Designer","Own thumbnail, copy and asset-version review. Confirm usage rights."],["Tax and Brand","Approve regulated claims, disclosures and business proof."],["Media","Promote approved assets after measurement QA. Compare accepted outcomes and stage lag."]]),true)
+  );
+}
+function partners(rows) {
+  const owned = rows.filter(r=>r.type==="partner" || r.type==="event");
+  const partner = owned.filter(r=>r.type==="partner");
+  const event = owned.filter(r=>r.type==="event");
+  const program = [
+    ["Platform partner co-marketing",partner],
+    ["Regional trade conference",event]
+  ];
+  return kpis([
+    kpi("Partner-source SAL",n(total(partner,"sal")),"Partner code and CRM record"),
+    kpi("Event-source SAL",n(total(event,"sal")),"Event campaign and CRM record"),
+    kpi("Sourced opportunities",n(total(owned,"opp")),"Exclusive primary-source count"),
+    kpi("Fully loaded cost",shortUsd(total(owned,"cost")),"Allocated program costs")
+  ])+stacked(
+    box("Program contribution","Fictional program rows. This table reports primary source.",table(["Program","Cost","SAL","Opps","Pipeline"],program.map(([name,data])=>[name,shortUsd(total(data,"cost")),n(total(data,"sal")),n(total(data,"opp")),shortUsd(total(data,"pipeline"))]),[1,2,3,4])),
+    box("Capture and cost checks","Example owners for source consistency.",defs([["Partnerships","Confirm partner code, co-marketing dates and spend ownership."],["Events","Confirm Salesforce Campaign and include travel, lodging, sponsorship and production."],["RevOps","Keep sourcing unique. Report event and partner influence separately."]])),
+    box("Influenced opportunities","Eligible matched touches. Programs can share an opportunity. These figures stay outside sourced totals.",table(["Program","Influenced opps","Of which also program-sourced"],program.map(([name,data])=>{const sourced=total(data,"opp");const overlap=Math.round(sourced*.7);const other=Math.round(total(rows,"opp")*.15);return [name,n(overlap+other),n(overlap)];}),[1,2]),true)
+  );
+}
+const renderers = {executive,sales,engineering,media,seo,creative,partners};
+const briefs = {
+  executive:["Compare sourced pipeline, accepted leads and collected fees by offering and primary source for the selected cohort.","Flag immature cohorts and the top difference between spend share and SAL share.","Explain the implication for January allocation in one plain-language sentence.","Propose one action, a named business owner and the next review date."],
+  sales:["Show accepted leads, held meetings, rejection counts and current-stage age for the selected cohorts.","Identify one conversion bottleneck or incomplete disposition.","Account for cohort age before interpreting the gap.","Propose a CRM hygiene or handoff change for Loan and the Salesforce admin."],
+  engineering:["List stale inputs, unmatched joins and synthetic lead check results.","Isolate the first broken checkpoint and state which published metrics it affects.","Explain what decisions should wait for the feed or join to recover.","Assign a verifier and require reconciliation before publishing changes."],
+  media:["Show spend, approved plan, accepted leads, held meetings and cost per stage.","Flag high-cost segments using comparable cohort age.","Explain the tradeoff between pacing and qualified volume.","Propose a bounded change for review with its verification metric."],
+  seo:["Show Search Console visibility and CRM-qualified outcome trends at supported grains.","Flag high-visibility pages with weak downstream progression where a valid join exists.","Explain whether the evidence supports an SEO, site-proof or instrumentation change.","Name the landing-page task owner and a metric for the next check."],
+  creative:["List the assets, copy versions and approval states in scope.","Surface one bottleneck or credible testable pattern.","Explain what creative or proof change could address it.","Request one rights-cleared variation with approval and QA owners."],
+  partners:["Show program cost, sourced outcomes and influenced outcomes separately.","Flag missing Salesforce Campaign IDs, cost or maturity evidence.","Explain which evidence would change the renewal decision.","Assign a follow-up to Partnerships or Events and name the readback."]
+};
+function exampleBrief(rows) {
+  const paid = rows.filter(r=>r.type==="paid");
+  const organic = rows.filter(r=>r.type==="organic");
+  const programs = rows.filter(r=>r.type==="partner" || r.type==="event");
+  const sal = total(rows,"sal");
+  const mql = total(rows,"mql");
+  const paidSal = total(paid,"sal");
+  switch (currentView) {
+    case "executive":
+      return [usd(total(rows,"pipeline"))+" in open sourced pipeline as of "+snapshot.short+", "+n(sal)+" all-channel sales-accepted leads and "+usd(total(currentReceipts(),"amount"))+" in cash received in the selected period.",ratio(paidSal,sal)+" of accepted leads have a paid primary source. Paid cost per SAL uses "+usd(total(paid,"cost"))+" divided by "+n(paidSal)+" paid-source accepted leads.","Open pipeline reflects inquiry cohorts at the stage snapshot. Cash reflects Finance receipt dates, which can come from different acquisition cohorts.","Alexis and Finance review spend and payment receipts with Loan at the next weekly decision meeting."];
+    case "sales": {
+      const {reasonCounts,rejected,pending} = salesDisposition(rows);
+      const topReason = reasonCounts.indexOf(Math.max(...reasonCounts));
+      const rejectionFinding = rejected
+        ? n(rejected)+" MQLs were rejected and "+n(pending)+" are pending. Largest reason category: "+rejectionReasons[topReason]+" ("+n(reasonCounts[topReason])+")."
+        : n(pending)+" MQLs are pending. No rejection reasons in scope.";
+      return [n(mql)+" MQLs, "+n(sal)+" accepted leads and "+n(total(rows,"held"))+" held meetings in this sample.",rejectionFinding,"Later cohorts have had less time to mature. Stage age reflects "+n(total(rows,"openOpp"))+" open opportunities as of "+snapshot.short+".","Loan and the Salesforce admin review pending dispositions and check the oldest open opportunities."];
+    }
+    case "engineering":
+      return ["Six of seven example feeds are on schedule. The synthetic form submission matched one warehouse inquiry.","The partner/event upload is late and Salesforce has one known delay.","The program cost readout is incomplete until the owner reconciles the upload.","Engineering asks Events and RevOps to backfill and verify cost and stage totals before publishing."];
+    case "media":
+      return ["Paid delivery cost "+shortUsd(total(paid,"cost"))+" for "+n(paidSal)+" sales-accepted leads in this sample.","The resulting cost per accepted lead is "+cp(total(paid,"cost"),paidSal)+".","Qualified acquisition cost gives the operator a stronger pacing signal when cohorts have comparable maturity.","Performance Marketing reviews spend, accepted stages and campaign ID coverage before proposing a budget shift."];
+    case "seo": {
+      const landing = seoLandingPages(organic);
+      const findings = landing.map(page=>page.theme+": "+n(page.clicks)+" clicks").join("; ");
+      const actions = seoActionQueue(landing).map(([,action])=>action).join(" ");
+      return [n(total(organic,"sal"))+" organic-source accepted leads and "+n(total(organic,"opp"))+" opportunities in this sample.",findings ? "Landing pages in scope: "+findings+"." : "The sample has no organic landing pages in scope.","Page clicks describe visibility. The sample CRM counts are organic-source totals for this cohort.",actions];
+    }
+    case "creative": {
+      const concepts = scopedAssets();
+      const countByStatus = new Map();
+      for (const {status} of concepts) countByStatus.set(status,(countByStatus.get(status) ?? 0)+1);
+      const findings = [...countByStatus].map(([status,count])=>status+": "+n(count)).join("; ");
+      return [n(concepts.length)+(concepts.length===1 ? " concept appears" : " concepts appear")+" in the selected sample review.",findings ? "Approval status in scope: "+findings+"." : "The sample has no concepts in scope.","Launch decisions depend on approved claims, rights and the ability to verify the test.",countByStatus.has("Tax review") ? "Tax and Brand resolve the eligibility language before Media tests a rights-cleared variant." : "Design advances the concept and copy with Brand, then confirms rights and measurement QA."];
+    }
+    case "partners":
+      return [shortUsd(total(programs,"cost"))+" in recorded program cost for "+n(total(programs,"opp"))+" sourced opportunities in this sample.","Attributed sources and influenced opportunities may overlap.","Renewal depends on fully loaded cost and sufficient cohort maturity.","Partnerships and Events confirm campaign codes and cost details with RevOps for the next review."];
+  }
+}
+function render() {
+  const meta = viewMeta[currentView];
+  const rows = currentRows();
+  const dataStatus = sampleStatus(rows);
+  $("view-title").textContent = meta.title;
+  $("view-summary").textContent = meta.summary;
+  $("filter-description").textContent = meta.filter;
+  $("report-status").textContent = dataStatus;
+  $("period").disabled = currentView==="engineering" || currentView==="creative";
+  $("product").disabled = currentView==="engineering";
+  $("report").setAttribute("aria-labelledby","tab-"+currentView);
+  $("dashboard").innerHTML = renderers[currentView](rows);
+  for (const tab of tabList.querySelectorAll("button")) {
+    const selected = tab.dataset.view===currentView;
+    tab.setAttribute("aria-selected",String(selected));
+    tab.tabIndex = selected ? 0 : -1;
+  }
+  $("status").textContent = meta.name+" view updated. "+meta.filter+" "+dataStatus;
+}
+function switchTab(view) {
+  currentView = view;
+  render();
+  if (location.protocol==="file:") { location.hash = view; }
+  else { history.replaceState(null,"","#"+view); }
+}
+for (const [key,meta] of Object.entries(viewMeta)) {
+  const button = document.createElement("button");
+  button.type = "button";
+  button.id = "tab-"+key;
+  button.dataset.view = key;
+  button.setAttribute("role","tab");
+  button.setAttribute("aria-controls","report");
+  button.textContent = meta.name;
+  button.addEventListener("click",()=>switchTab(key));
+  tabList.append(button);
+}
+tabList.addEventListener("keydown",event=>{
+  const keys = Object.keys(viewMeta);
+  const index = keys.indexOf(currentView);
+  const positions = {ArrowLeft:(index+keys.length-1)%keys.length,ArrowRight:(index+1)%keys.length,Home:0,End:keys.length-1};
+  if (!(event.key in positions)) return;
+  event.preventDefault();
+  const target = keys[positions[event.key]];
+  switchTab(target);
+  $("tab-"+target).focus();
+});
+for (const id of ["period","product"]) $(id).addEventListener("change",render);
+$("brief").addEventListener("click",()=>{
+  const labels = ["Facts","Findings","Insights","Actions"];
+  const commands = briefs[currentView];
+  const context = currentView==="engineering" ? "Environment snapshot" : currentView==="creative" ? productLabel() : periodLabel()+" · "+productLabel();
+  $("ffia-context").textContent = viewMeta[currentView].name+" · "+context;
+  const example = exampleBrief(currentRows());
+  $("ffia-content").innerHTML = labels.map((label,index)=>'<div><dt>'+label+'</dt><dd>'+clean(example[index])+'</dd></div>').join("");
+  $("prompt").value = "Using the certified Onshore "+viewMeta[currentView].name+" view for "+context+", write a four-part FFIA brief in plain English. "+labels.map((label,index)=>label+" — "+commands[index]).join(" ")+" Cite the view, date, filters and metric definitions. State what is missing and ask before any write.";
+  $("copy").textContent = "Copy prompt";
+  $("ffia").showModal();
+});
+$("close").addEventListener("click",()=>$("ffia").close());
+$("copy").addEventListener("click",async()=>{
+  try {
+    await navigator.clipboard.writeText($("prompt").value);
+    $("copy").textContent = "Copied";
+  } catch {
+    $("prompt").select();
+    $("copy").textContent = document.execCommand("copy") ? "Copied" : "Text selected";
+  }
+});
+window.addEventListener("hashchange",()=>{
+  const view = location.hash.slice(1) || "executive";
+  if (view!==currentView && Object.hasOwn(viewMeta,view)) { currentView=view; render(); }
+});
+const initial = location.hash.slice(1);
+if (Object.hasOwn(viewMeta,initial)) currentView=initial;
+render();
+</script>
+</body>
+</html>
