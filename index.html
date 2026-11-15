@@ -64,7 +64,7 @@
     <details class="methods"><summary>Metric definitions and attribution</summary>
       <p>Inquiries and stages are synthetic, deduplicated inquiry-cohort counts. SAL means Sales accepted the inquiry for follow-up. SQL means Sales confirmed qualification. Held means an AE meeting occurred. Open sourced pipeline is gross open opportunity value at the stage snapshot. Each opportunity has one primary source. Cash collected is a separate Finance measure by receipt date and may include receipts from earlier or unknown acquisition cohorts.</p>
       <p>Paid cost per SAL divides paid demand spend by accepted leads with a paid demand source. All-channel SAL includes paid and nonpaid sources. Brand delivery uses company-wide plan, spend and impressions. The Media view includes a separate fictional matched-market comparison. Branded-search activity and CRM outcomes are measured at market level, each with its own source and denominator. Partner and event costs use fully loaded allocated cost in the demo. Sourced and influenced opportunity sets can overlap. Assists stay separate from sourced totals. Incrementality requires a separate design.</p>
-      <p>§179D inquiries do not establish eligibility. Production qualification needs an approved construction-start and eligibility disposition from Sales and Tax. The period selects inquiry cohorts or receipt dates, according to the metric. Stage outcomes use a common January 31, 2027 snapshot, so later cohorts have had less time to mature. Sample checks compare stage balances and receipts with the fictional control totals. Empty denominators display as a dash.</p>
+      <p>§179D inquiries do not establish eligibility. Production qualification needs an approved construction-start and eligibility disposition from Sales and Tax. The period selects inquiry cohorts or receipt dates, according to the metric. Stage outcomes use a common January 31, 2027 snapshot, so later cohorts have had less time to progress. Use the same elapsed time since inquiry to compare conversion. The working assumption of roughly two weeks from inquiry to sale is separate from the simulated timing of acceptance and meetings. Sample checks compare stage balances and receipts with the fictional control totals. Empty denominators display as a dash.</p>
       <p>Sales dispositions illustrate how marketing-qualified inquiries split into accepted, rejected and pending decisions. Rejection percentages use only rejected MQLs as the denominator. Age is calendar days in the current stage through the report cutoff. Stage assignments and entry dates are simulated for the same open opportunities counted in the selected cohort.</p>
     </details>
   </main>
@@ -111,6 +111,8 @@ const periods = {
   early:{firstWeek:0,lastWeek:1,firstDate:"2027-01-04",lastDate:"2027-01-17",end:"Jan 17",receiptControl:{rd:42000,"179d":0}},
   late:{firstWeek:2,lastWeek:3,firstDate:"2027-01-18",lastDate:"2027-01-31",end:"Jan 31",receiptControl:{rd:51000,"179d":0}}
 };
+const daysInSample = (Date.parse(periods.all.lastDate)-Date.parse(periods.all.firstDate))/86_400_000;
+const daysSinceWeekStart = weekIndex => daysInSample-weekIndex*7;
 const receiptRows = [
   {date:"2027-01-10",product:"rd",amount:24000,origination:"2026-12-15"},
   {date:"2027-01-17",product:"rd",amount:18000,origination:null},
@@ -194,6 +196,14 @@ const defs = (items,className="ledger") => '<dl class="'+className+'">'+items.ma
 const channels = (rows, fn) => channelPlan.filter(p=>rows.some(r=>r.channel===p.name)).map(p=>fn(p.name,rows.filter(r=>r.channel===p.name)));
 const weekly = (rows, key) => weeks.filter((week,wi)=>rows.some(r=>r.wi===wi)).map(week=>[week,total(rows.filter(r=>r.week===week),key)]);
 const stages = [["Inquiry","inquiries"],["Marketing-qualified","mql"],["Sales-accepted","sal"],["Sales-qualified","sql"],["Meeting held","held"],["Opportunity","opp"]];
+const cohortTiming = "Illustrative outcomes through "+snapshot.short+". Later cohorts had less time to progress. Compare conversion at the same days since inquiry.";
+function latestCohortRead(rows) {
+  const latestWeek = periods.all.lastWeek;
+  const latestRows = rows.filter(row=>row.wi===latestWeek);
+  if (!latestRows.length) return "";
+  const days = daysSinceWeekStart(latestWeek);
+  return weeks[latestWeek]+" early read: "+n(total(latestRows,"sal"))+" accepted leads and "+n(total(latestRows,"held"))+" held meetings in the sample at 0–"+days+" days since inquiry.";
+}
 function executive(rows) {
   const paid = rows.filter(r=>r.type==="paid");
   const paidSpend = total(paid,"cost");
@@ -209,10 +219,13 @@ function executive(rows) {
     executiveBrandReadout(),
     box("Open pipeline by inquiry week","Open opportunity value as of "+snapshot.full+".",bars(weekly(rows,"pipeline"),shortUsd)),
     box("Pipeline by primary source","One primary source per opportunity.",table(["Source","Open opportunities","Value"],channels(rows,(name,data)=>[name,n(total(data,"openOpp")),shortUsd(total(data,"pipeline"))]),[1,2])),
-    box("Launch traction by inquiry week","The synthetic launch starts with limited delivery. Read accepted leads and held meetings alongside cohort age.",table(["Inquiry week","All-source SAL","Paid-source SAL","Held meetings"],weeks.flatMap((week,wi)=>{
+    box("Launch traction by inquiry week",cohortTiming,table(["Inquiry week","All-source SAL","Paid-source SAL","Held meetings","Days since inquiry"],weeks.flatMap((week,wi)=>{
       const cohort = rows.filter(row=>row.wi===wi);
       if (!cohort.length) return [];
-      return [[week,n(total(cohort,"sal")),n(total(cohort.filter(row=>row.type==="paid"),"sal")),n(total(cohort,"held"))]];
+      const oldest = daysSinceWeekStart(wi);
+      const elapsed = Math.max(0,oldest-6)+"–"+oldest;
+      const age = wi===periods.all.lastWeek ? tag(elapsed+" · Early read","warn") : elapsed;
+      return [[week,n(total(cohort,"sal")),n(total(cohort.filter(row=>row.type==="paid"),"sal")),n(total(cohort,"held")),age]];
     }),[1,2,3]),true),
     box("Decision for the next review","Example agenda for Dominic, Alexis, Loan and Finance.",defs([["Compare","Review paid-search and partner quality once cohorts have comparable maturity."],["Confirm","Tie cash to Finance receipt dates and review which receipts have an inquiry link."],["Decide","Check whether additional accepted leads advance to opportunities and justify the combined media cost before shifting the mix."]]),true)
   );
@@ -247,11 +260,10 @@ function salesDisposition(rows) {
 }
 
 function salesStageAges(rows) {
-  const daysInSample = (Date.parse(periods.all.lastDate)-Date.parse(periods.all.firstDate))/86_400_000;
   const ages = openOpportunityStages.map(() => []);
   for (const row of rows) {
     const sourceIndex = channelPlan.findIndex(source => source.name===row.channel);
-    const daysSinceCohortStart = daysInSample-row.wi*7;
+    const daysSinceCohortStart = daysSinceWeekStart(row.wi);
     for (let i=0; i<row.openOpp; i++) {
       const stage = (i+sourceIndex+row.wi+(row.product==="rd" ? 0 : 1))%openOpportunityStages.length;
       const daysToStageEntry = (i*3+sourceIndex+stage*4)%(daysSinceCohortStart+1);
@@ -280,7 +292,7 @@ function sales(rows) {
     kpi("Held meetings",n(total(rows,"held")),"AE meeting disposition"),
     kpi("Opportunities",n(total(rows,"opp")),"One count per opportunity")
   ])+stacked(
-    box("Cohort progression","Unique leads through held meeting. Opportunity count uses opportunity IDs.",bars(stages.map(([label,key])=>[label,total(rows,key)]))),
+    box("Cohort progression",["Unique leads through held meeting. Opportunity count uses opportunity IDs.",cohortTiming,latestCohortRead(rows)].filter(Boolean).join(" "),bars(stages.map(([label,key])=>[label,total(rows,key)]))),
     box("Source quality","Acceptance and meetings for the selected cohort.",table(["Source","MQL","SAL","Held","MQL → SAL"],channels(rows,(name,data)=>[name,n(total(data,"mql")),n(total(data,"sal")),n(total(data,"held")),ratio(total(data,"sal"),total(data,"mql"))]),[1,2,3,4])),
     box("Rejection reasons",n(total(rows,"mql"))+" MQLs in scope · "+n(salesAccepted)+" accepted · "+n(rejected)+" rejected · "+n(pending)+" pending. Reasons are synthetic.",
       table(["Reason","Rejected MQLs","Share of rejects"],rejectionReasons.map((reason,index)=>[reason,n(reasonCounts[index]),ratio(reasonCounts[index],rejected)]),[1,2])),
@@ -488,8 +500,8 @@ function partners(rows) {
 }
 const renderers = {executive,sales,engineering,media,seo,creative,partners};
 const briefs = {
-  executive:["Compare sourced pipeline, accepted leads and collected fees by offering and primary source for the selected cohort.","Flag immature cohorts and the top difference between spend share and SAL share. If an approved brand study is available, show accepted-lead lift and combined media cost.","Explain the implication for January allocation in one plain-language sentence.","Propose one action, a named business owner and the next review date."],
-  sales:["Show accepted leads, held meetings, rejection counts and current-stage age for the selected cohorts.","Identify one conversion bottleneck or incomplete disposition.","Account for cohort age before interpreting the gap.","Propose a CRM hygiene or handoff change for Loan and the Salesforce admin."],
+  executive:["Compare sourced pipeline, accepted leads and collected fees by offering and primary source for the selected cohort.","Flag early reads and the top difference between spend share and SAL share. If an approved brand study is available, show accepted-lead lift and combined media cost.","Compare outcomes at the same days since inquiry and explain the implication for allocation.","Propose one action, a named business owner and the next review date."],
+  sales:["Show accepted leads, held meetings, rejection counts and current-stage age for the selected cohorts.","Identify one conversion bottleneck or incomplete disposition.","Flag early reads and compare outcomes at the same days since inquiry.","Propose a CRM hygiene or handoff change for Loan and the Salesforce admin."],
   engineering:["List stale inputs, unmatched joins and synthetic lead check results.","Isolate the first broken checkpoint and state which published metrics it affects.","Explain what decisions should wait for the feed or join to recover.","Assign a verifier and require reconciliation before publishing changes."],
   media:["Show demand spend and accepted leads for the selected cohort. Show brand delivery for the selected period.","With a valid holdout, estimate additional accepted leads and compare demand-only and combined cost.","Check cohort age, uncertainty and whether opportunity value supports the additional spend.","Review the next creative and spend decision with Marketing and Sales."],
   seo:["Show Search Console visibility and CRM-qualified outcome trends at supported grains.","Flag high-visibility pages with weak downstream progression where a valid join exists.","Explain whether the evidence supports an SEO, site-proof or instrumentation change.","Name the landing-page task owner and a metric for the next check."],
@@ -508,7 +520,7 @@ function exampleBrief(rows) {
       const example = brandStudyReadout();
       return [
         usd(total(rows,"pipeline"))+" in open sourced pipeline as of "+snapshot.short+", "+n(sal)+" accepted leads and "+usd(total(currentReceipts(),"amount"))+" in cash receipts for the selected period.",
-        ratio(paidSal,sal)+" of accepted leads have a paid primary source. The separate fictional market example shows "+n(example.additionalAccepted)+" additional accepted leads after accounting for the holdout trend.",
+        [ratio(paidSal,sal)+" of accepted leads have a paid primary source.",latestCohortRead(rows),"The separate fictional market example shows "+n(example.additionalAccepted)+" additional accepted leads after accounting for the holdout trend."].filter(Boolean).join(" "),
         "In the fictional comparison, demand cost per paid-source accepted lead was "+usd(example.demandWith)+" vs "+usd(example.demandWithout)+" in holdout. Combined cost per all-source accepted lead was "+usd(example.combinedWith)+" vs "+usd(example.combinedWithout)+". January cash receipts relate to older or unlinked inquiries.",
         "Review pacing and cash with Finance. Before shifting the brand and demand mix, compare opportunity progression and contribution for equally mature cohorts with Sales."
       ];
@@ -519,7 +531,7 @@ function exampleBrief(rows) {
       const rejectionFinding = rejected
         ? n(rejected)+" MQLs were rejected and "+n(pending)+" are pending. Largest reason category: "+rejectionReasons[topReason]+" ("+n(reasonCounts[topReason])+")."
         : n(pending)+" MQLs are pending. No rejection reasons in scope.";
-      return [n(mql)+" MQLs, "+n(sal)+" accepted leads and "+n(total(rows,"held"))+" held meetings in this sample.",rejectionFinding,"Later cohorts have had less time to mature. Stage age reflects "+n(total(rows,"openOpp"))+" open opportunities as of "+snapshot.short+".","Loan and the Salesforce admin review pending dispositions and check the oldest open opportunities."];
+      return [n(mql)+" MQLs, "+n(sal)+" accepted leads and "+n(total(rows,"held"))+" held meetings in this sample.",[rejectionFinding,latestCohortRead(rows)].filter(Boolean).join(" "),cohortTiming+" Stage age reflects "+n(total(rows,"openOpp"))+" open opportunities as of "+snapshot.short+".","Loan and the Salesforce admin review pending dispositions and check the oldest open opportunities."];
     }
     case "engineering":
       return ["Six of seven example feeds are on schedule. The synthetic form submission matched one warehouse inquiry.","The partner/event upload is late and Salesforce has one known delay.","The program cost readout is incomplete until the owner reconciles the upload.","Engineering asks Events and RevOps to backfill and verify cost and stage totals before publishing."];
