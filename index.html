@@ -36,6 +36,10 @@
   .study-note{margin:8px 0 13px;padding:8px 10px;border-left:3px solid var(--accent);background:var(--soft);font-size:13px}
   .efficiency{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:12px 0 0;padding:0;font-size:12px}
   .efficiency div{border-top:1px solid var(--line);padding:8px 0 0}.efficiency dt{font-weight:700}.efficiency dd{margin:3px 0;color:var(--muted)}
+  .executive-brand{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin:10px 0 0}
+  .executive-brand div{min-width:0;border-top:2px solid var(--line);padding-top:6px}.executive-brand div:first-child{border-color:var(--accent)}
+  .executive-brand dt{font-size:11px;font-weight:650}.executive-brand dd{margin:2px 0 0;font:400 24px/1.16 var(--serif)}
+  @media(max-width:660px){.executive-brand{grid-template-columns:1fr;gap:6px}}
   .brand-delivery{margin-top:13px;border-top:1px solid var(--line);padding-top:10px;font-size:12px}.brand-delivery summary{font-weight:700;cursor:pointer}
   @media(max-width:660px){.growth-flow{grid-template-columns:1fr;gap:14px}.flow-arrow{right:12px;top:auto;bottom:-16px;transform:rotate(90deg)}.efficiency{grid-template-columns:1fr}}
 </style>
@@ -202,6 +206,7 @@ function executive(rows) {
     kpi("Paid cost per SAL",cp(paidSpend,paidSal),usd(paidSpend)+" demand spend ÷ "+n(paidSal)+" paid-source SAL"),
     kpi("Cash collected",shortUsd(cash),usd(cash)+" by receipt date · pre-launch or unlinked")
   ])+stacked(
+    executiveBrandReadout(),
     box("Open pipeline by inquiry week","Open opportunity value as of "+snapshot.full+".",bars(weekly(rows,"pipeline"),shortUsd)),
     box("Pipeline by primary source","One primary source per opportunity.",table(["Source","Open opportunities","Value"],channels(rows,(name,data)=>[name,n(total(data,"openOpp")),shortUsd(total(data,"pipeline"))]),[1,2])),
     box("Launch traction by inquiry week","The synthetic launch starts with limited delivery. Read accepted leads and held meetings alongside cohort age.",table(["Inquiry week","All-source SAL","Paid-source SAL","Held meetings"],weeks.flatMap((week,wi)=>{
@@ -209,7 +214,7 @@ function executive(rows) {
       if (!cohort.length) return [];
       return [[week,n(total(cohort,"sal")),n(total(cohort.filter(row=>row.type==="paid"),"sal")),n(total(cohort,"held"))]];
     }),[1,2,3]),true),
-    box("Decision for the next review","Example agenda for Dominic, Alexis, Loan and Finance.",defs([["Compare","Review paid-search and partner quality once cohorts have comparable maturity."],["Confirm","Tie cash to Finance receipt dates and review which receipts have an inquiry link."],["Decide","Review pacing and tracking evidence with Sales and Finance before the next spend increase."]]),true)
+    box("Decision for the next review","Example agenda for Dominic, Alexis, Loan and Finance.",defs([["Compare","Review paid-search and partner quality once cohorts have comparable maturity."],["Confirm","Tie cash to Finance receipt dates and review which receipts have an inquiry link."],["Decide","Check whether additional accepted leads advance to opportunities and justify the combined media cost before shifting the mix."]]),true)
   );
 }
 const rejectionReasons = [
@@ -335,6 +340,17 @@ function brandStudyReadout() {
   const combinedWithout = study.demandSpend/accepted.holdout[1];
   return {funnel,additionalAccepted,acceptedWithBrand:accepted.test[1],expectedAccepted,demandWith,demandWithout,combinedWith,combinedWithout,
     brandCostPerAdded:study.extraBrandSpend/additionalAccepted};
+}
+
+function executiveBrandReadout() {
+  const example = brandStudyReadout();
+  const signals = defs([
+    ["Additional sales-accepted leads","+"+n(example.additionalAccepted)+" · "+n(example.acceptedWithBrand)+" vs "+n(example.expectedAccepted)+" expected"],
+    ["Demand cost per paid-source accepted lead",usd(example.demandWith)+" vs "+usd(example.demandWithout)+" holdout"],
+    ["Combined cost per all-source accepted lead",usd(example.combinedWith)+" vs "+usd(example.combinedWithout)+" holdout"]
+  ],"executive-brand");
+  return box("Brand’s effect on demand","Fixed fictional market comparison. January filters apply to the operating KPIs.",
+    signals+'<p class="study-footnote"><strong>Decision to test.</strong> Do the added leads progress far enough to justify the higher combined cost? <a href="#media" data-open-media>See the full comparison in Media</a>.</p>',true);
 }
 
 function growthJourney() {
@@ -472,7 +488,7 @@ function partners(rows) {
 }
 const renderers = {executive,sales,engineering,media,seo,creative,partners};
 const briefs = {
-  executive:["Compare sourced pipeline, accepted leads and collected fees by offering and primary source for the selected cohort.","Flag immature cohorts and the top difference between spend share and SAL share.","Explain the implication for January allocation in one plain-language sentence.","Propose one action, a named business owner and the next review date."],
+  executive:["Compare sourced pipeline, accepted leads and collected fees by offering and primary source for the selected cohort.","Flag immature cohorts and the top difference between spend share and SAL share. If an approved brand study is available, show accepted-lead lift and combined media cost.","Explain the implication for January allocation in one plain-language sentence.","Propose one action, a named business owner and the next review date."],
   sales:["Show accepted leads, held meetings, rejection counts and current-stage age for the selected cohorts.","Identify one conversion bottleneck or incomplete disposition.","Account for cohort age before interpreting the gap.","Propose a CRM hygiene or handoff change for Loan and the Salesforce admin."],
   engineering:["List stale inputs, unmatched joins and synthetic lead check results.","Isolate the first broken checkpoint and state which published metrics it affects.","Explain what decisions should wait for the feed or join to recover.","Assign a verifier and require reconciliation before publishing changes."],
   media:["Show demand spend and accepted leads for the selected cohort. Show brand delivery for the selected period.","With a valid holdout, estimate additional accepted leads and compare demand-only and combined cost.","Check cohort age, uncertainty and whether opportunity value supports the additional spend.","Review the next creative and spend decision with Marketing and Sales."],
@@ -488,8 +504,15 @@ function exampleBrief(rows) {
   const mql = total(rows,"mql");
   const paidSal = total(paid,"sal");
   switch (currentView) {
-    case "executive":
-      return [usd(total(rows,"pipeline"))+" in open sourced pipeline as of "+snapshot.short+", "+n(sal)+" all-channel sales-accepted leads and "+usd(total(currentReceipts(),"amount"))+" in cash received in the selected period.",ratio(paidSal,sal)+" of accepted leads have a paid primary source. Paid cost per SAL uses "+usd(total(paid,"cost"))+" divided by "+n(paidSal)+" paid-source accepted leads.","Open pipeline reflects inquiry cohorts at the stage snapshot. Cash follows Finance receipt dates. The sample receipts are linked to pre-launch inquiries or lack an inquiry link. Compare launch cohorts after they mature.","Alexis and Finance review spend and payment receipts with Loan at the next weekly decision meeting."];
+    case "executive": {
+      const example = brandStudyReadout();
+      return [
+        usd(total(rows,"pipeline"))+" in open sourced pipeline as of "+snapshot.short+", "+n(sal)+" accepted leads and "+usd(total(currentReceipts(),"amount"))+" in cash receipts for the selected period.",
+        ratio(paidSal,sal)+" of accepted leads have a paid primary source. The separate fictional market example shows "+n(example.additionalAccepted)+" additional accepted leads after accounting for the holdout trend.",
+        "In the fictional comparison, demand cost per paid-source accepted lead was "+usd(example.demandWith)+" vs "+usd(example.demandWithout)+" in holdout. Combined cost per all-source accepted lead was "+usd(example.combinedWith)+" vs "+usd(example.combinedWithout)+". January cash receipts relate to older or unlinked inquiries.",
+        "Review pacing and cash with Finance. Before shifting the brand and demand mix, compare opportunity progression and contribution for equally mature cohorts with Sales."
+      ];
+    }
     case "sales": {
       const {reasonCounts,rejected,pending} = salesDisposition(rows);
       const topReason = reasonCounts.indexOf(Math.max(...reasonCounts));
@@ -552,6 +575,13 @@ function switchTab(view) {
   if (location.protocol==="file:") { location.hash = view; }
   else { history.replaceState(null,"","#"+view); }
 }
+$("dashboard").addEventListener("click",event=>{
+  const link = event.target.closest("a[data-open-media]");
+  if (!link || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+  event.preventDefault();
+  switchTab("media");
+  $("tab-media").focus();
+});
 for (const [key,meta] of Object.entries(viewMeta)) {
   const button = document.createElement("button");
   button.type = "button";
