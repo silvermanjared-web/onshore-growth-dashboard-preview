@@ -63,7 +63,7 @@
     <div id="dashboard"></div>
     <details class="methods"><summary>Metric definitions and attribution</summary>
       <p>Inquiries and stages are synthetic, deduplicated inquiry-cohort counts. SAL means Sales accepted the inquiry for follow-up. SQL means Sales confirmed qualification. Held means an AE meeting occurred. Open sourced pipeline is gross open opportunity value at the stage snapshot. Each opportunity has one primary source. Cash collected is a separate Finance measure by receipt date and may include receipts from earlier or unknown acquisition cohorts.</p>
-      <p>Paid cost per SAL divides paid demand spend by accepted leads with a paid demand source. All-channel SAL includes paid and nonpaid sources. Brand delivery uses company-wide plan, spend and impressions. The Media view includes a separate fictional matched-market comparison. Branded-search activity and CRM outcomes are measured at market level, each with its own source and denominator. Partner and event costs use fully loaded allocated cost in the demo. Sourced and influenced opportunity sets can overlap. Assists stay separate from sourced totals. Incrementality requires a separate design.</p>
+      <p>Paid cost per SAL divides paid demand spend by accepted leads with a paid demand source. Paid cost per held meeting uses the same spend and counts only meetings from paid demand sources. Executive and Sales show held meetings across all sources. All-channel SAL includes paid and nonpaid sources. Brand delivery uses company-wide plan, spend and impressions. The Media view includes a separate fictional matched-market comparison. Branded-search activity and CRM outcomes are measured at market level, each with its own source and denominator. Partner and event costs use fully loaded allocated cost in the demo. Sourced and influenced opportunity sets can overlap. Assists stay separate from sourced totals. Incrementality requires a separate design.</p>
       <p>§179D inquiries do not establish eligibility. Production qualification needs an approved construction-start and eligibility disposition from Sales and Tax. The period selects inquiry cohorts or receipt dates, according to the metric. Stage outcomes use a common January 31, 2027 snapshot, so later cohorts have had less time to progress. Use the same elapsed time since inquiry to compare conversion. The working assumption of roughly two weeks from inquiry to sale is separate from the simulated timing of acceptance and meetings. Sample checks compare stage balances and receipts with the fictional control totals. Empty denominators display as a dash.</p>
       <p>Sales dispositions illustrate how marketing-qualified inquiries split into accepted, rejected and pending decisions. Rejection percentages use only rejected MQLs as the denominator. Age is calendar days in the current stage through the report cutoff. Stage assignments and entry dates are simulated for the same open opportunities counted in the selected cohort.</p>
     </details>
@@ -217,7 +217,8 @@ function executive(rows) {
     kpi("Cash collected",shortUsd(cash),usd(cash)+" by receipt date · pre-launch or unlinked")
   ])+stacked(
     executiveBrandReadout(),
-    box("Open pipeline by inquiry week","Open opportunity value as of "+snapshot.full+".",bars(weekly(rows,"pipeline"),shortUsd)),
+    box("Open pipeline by inquiry week","Open opportunity value at "+snapshot.full+". Cohorts had different amounts of follow-up. Compare results at the same age to assess ramp.",
+      bars(weekly(rows,"pipeline").map(([week,value])=>[week===weeks.at(-1) ? week+" · Early read (0–6 days)" : week,value]),shortUsd)),
     box("Pipeline by primary source","One primary source per opportunity.",table(["Source","Open opportunities","Value"],channels(rows,(name,data)=>[name,n(total(data,"openOpp")),shortUsd(total(data,"pipeline"))]),[1,2])),
     box("Launch traction by inquiry week",cohortTiming,table(["Inquiry week","All-source SAL","Paid-source SAL","Held meetings","Days since inquiry"],weeks.flatMap((week,wi)=>{
       const cohort = rows.filter(row=>row.wi===wi);
@@ -227,7 +228,7 @@ function executive(rows) {
       const age = wi===periods.all.lastWeek ? tag(elapsed+" · Early read","warn") : elapsed;
       return [[week,n(total(cohort,"sal")),n(total(cohort.filter(row=>row.type==="paid"),"sal")),n(total(cohort,"held")),age]];
     }),[1,2,3]),true),
-    box("Decision for the next review","Example agenda for Dominic, Alexis, Loan and Finance.",defs([["Compare","Review paid-search and partner quality once cohorts have comparable maturity."],["Confirm","Tie cash to Finance receipt dates and review which receipts have an inquiry link."],["Decide","Check whether additional accepted leads advance to opportunities and justify the combined media cost before shifting the mix."]]),true)
+    box("Decision for the next review","Example agenda for executive leadership, Marketing, Sales and Finance.",defs([["Compare","Review paid-search and partner quality once cohorts have comparable maturity."],["Confirm","Tie cash to Finance receipt dates and review which receipts have an inquiry link."],["Decide","Check whether additional accepted leads advance to opportunities and justify the combined media cost before shifting the mix."]]),true)
   );
 }
 const rejectionReasons = [
@@ -405,6 +406,7 @@ function media(rows) {
   const paid = rows.filter(r=>r.type==="paid");
   const spend = total(paid,"cost");
   const paidSal = total(paid,"sal");
+  const paidHeld = total(paid,"held");
   const weeksInScope = [...new Set(rows.map(row=>row.wi))];
   const budgetShare = offeringInScope("rd") && offeringInScope("179d") ? 1 : offeringInScope("rd") ? paidOfferingShare[0] : paidOfferingShare[1];
   const plan = weeksInScope.reduce((budget,wi)=>budget+launchWeeks[wi].paidBudget*budgetShare,0);
@@ -412,10 +414,10 @@ function media(rows) {
     kpi("Demand spend",shortUsd(spend),usd(spend)+" · paid demand channels"),
     kpi("Demand plan used",ratio(spend,plan),usd(plan)+" phased sample demand budget in scope"),
     kpi("Paid cost per SAL",cp(spend,paidSal),usd(spend)+" demand spend ÷ "+n(paidSal)+" paid-source SAL"),
-    kpi("Cost per held",cp(spend,total(paid,"held")),"Paid cost / held meetings")
+    kpi("Paid cost per held meeting",cp(spend,paidHeld),usd(spend)+" demand spend ÷ "+n(paidHeld)+" paid-source held meetings")
   ])+stacked(
     growthJourney(),
-    box("Paid channel scorecard","Each cost per SAL uses spend and paid-source SAL from the same channel.",table(["Channel","Spend","Inquiries","Paid SAL","Cost/SAL","Held"],channels(paid,(name,data)=>[name,usd(total(data,"cost")),n(total(data,"inquiries")),n(total(data,"sal")),cp(total(data,"cost"),total(data,"sal")),n(total(data,"held"))]),[1,2,3,4,5])),
+    box("Paid channel scorecard","Synthetic channel results illustrate the calculation. Compare qualified pipeline at the same cohort age before shifting spend.",table(["Channel","Spend","Inquiries","Paid SAL","Cost/SAL","Paid-source held"],channels(paid,(name,data)=>[name,usd(total(data,"cost")),n(total(data,"inquiries")),n(total(data,"sal")),cp(total(data,"cost"),total(data,"sal")),n(total(data,"held"))]),[1,2,3,4,5])),
     box("Demand spend by week","Calendar-aligned delivery cost for paid demand channels.",bars(weekly(paid,"cost"),shortUsd)),
     brandImpact(),
     box("Optimization queue","Example review items for the performance owner.",defs([["Search terms","Review high-spend themes with mature accepted-lead evidence."],["Landing path","Confirm product routing and compare accepted outcomes per session after the consent baseline."],["Creative","Inspect concepts and rights status before requesting new cuts or copy."]]),true)
@@ -521,7 +523,7 @@ function exampleBrief(rows) {
       return [
         usd(total(rows,"pipeline"))+" in open sourced pipeline as of "+snapshot.short+", "+n(sal)+" accepted leads and "+usd(total(currentReceipts(),"amount"))+" in cash receipts for the selected period.",
         [ratio(paidSal,sal)+" of accepted leads have a paid primary source.",latestCohortRead(rows),"The separate fictional market example shows "+n(example.additionalAccepted)+" additional accepted leads after accounting for the holdout trend."].filter(Boolean).join(" "),
-        "In the fictional comparison, demand cost per paid-source accepted lead was "+usd(example.demandWith)+" vs "+usd(example.demandWithout)+" in holdout. Combined cost per all-source accepted lead was "+usd(example.combinedWith)+" vs "+usd(example.combinedWithout)+". January cash receipts relate to older or unlinked inquiries.",
+        "Open pipeline is a snapshot across cohorts with different follow-up times. In the fictional comparison, demand cost per paid-source accepted lead was "+usd(example.demandWith)+" vs "+usd(example.demandWithout)+" in holdout. Combined cost per all-source accepted lead was "+usd(example.combinedWith)+" vs "+usd(example.combinedWithout)+". January cash receipts relate to older or unlinked inquiries.",
         "Review pacing and cash with Finance. Before shifting the brand and demand mix, compare opportunity progression and contribution for equally mature cohorts with Sales."
       ];
     }
@@ -539,7 +541,7 @@ function exampleBrief(rows) {
       const brand = brandInPeriod();
       const example = brandStudyReadout();
       return [
-        "Paid demand cost "+usd(total(paid,"cost"))+" for "+n(paidSal)+" sales-accepted leads. Company-wide brand delivery cost "+usd(total(brand,"spend"))+" in the selected period.",
+        "Paid demand cost "+usd(total(paid,"cost"))+" for "+n(paidSal)+" paid-source accepted leads and "+n(total(paid,"held"))+" paid-source held meetings. Company-wide brand delivery cost "+usd(total(brand,"spend"))+" in the selected period.",
         "Selected demand cost per accepted lead is "+cp(total(paid,"cost"),paidSal)+". In the separate worked comparison, the brand markets had "+n(example.additionalAccepted)+" additional accepted leads after accounting for the holdout trend.",
         "In the worked comparison, demand cost per paid-source accepted lead fell to "+usd(example.demandWith)+" from the holdout’s "+usd(example.demandWithout)+". Combined cost per all-source accepted lead rose to "+usd(example.combinedWith)+" from "+usd(example.combinedWithout)+". Review opportunity progression before deciding to scale.",
         "Marketing pairs comparable markets, keeps demand activity steady and checks spillover. Sales verifies accepted leads and opportunities at the same cohort age. Use those findings to refine the next brand and demand creative brief."
